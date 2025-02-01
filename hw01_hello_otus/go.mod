@@ -1,3 +1,5 @@
-module github.com/fixme_my_friend/hw01_hello_otus
+module github.com/EvGesh4And/golang-homework/hw01_hello_otus
 
-go 1.22
+go 1.23
+
+require golang.org/x/example/hello v0.0.0-20241216154601-40afcb705d05
