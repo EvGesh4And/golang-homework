@@ -18,11 +18,13 @@ func Unpack(s string) (string, error) {
 	var status int
 
 	for _, r := range s {
+		// Проверка на цифру
+		isDigit := '0' <= r && r <= '9'
 		switch status {
-		// Режим записи.
+		// Режим записи
 		case 2:
 			// Если текущий символ цифра -- повторяем символ для записи
-			if '0' <= r && r <= '9' {
+			if isDigit {
 				builder.WriteString(strings.Repeat(string(symbolRune), int(r-'0')))
 				// После записи становимся готовыми к идентификации
 				status = 0
@@ -37,7 +39,7 @@ func Unpack(s string) (string, error) {
 		case 0:
 			switch {
 			// Если цифра, то ошибка
-			case '0' <= r && r <= '9':
+			case isDigit:
 				return "", ErrInvalidString
 			// Если имеем дело с возможным экранированием, то идем к следующему символу с проверкой
 			case r == '\\':
@@ -51,7 +53,7 @@ func Unpack(s string) (string, error) {
 		case 1:
 			// Проверка претендента на экранирование
 			// Он должен быть либо \, либо цифра
-			if r != '\\' && ('0' > r || r > '9') {
+			if r != '\\' && !isDigit {
 				return "", ErrInvalidString
 			}
 			// Экранированный символ для записи
