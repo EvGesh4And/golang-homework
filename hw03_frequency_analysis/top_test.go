@@ -80,3 +80,28 @@ func TestTop10(t *testing.T) {
 		}
 	})
 }
+
+func TestTop10New(t *testing.T) {
+	const textOneWord = "word word word word word"
+
+	t.Run("One word", func(t *testing.T) {
+		expected := []string{
+			"word", // 5
+		}
+
+		require.Equal(t, expected, Top10(textOneWord))
+	})
+
+	const textFiveWord = "dword bword cword word aword word"
+	t.Run("Five words", func(t *testing.T) {
+		expected := []string{
+			"word",  // 2
+			"aword", // 1
+			"bword", // 1
+			"cword", // 1
+			"dword", // 1
+		}
+
+		require.Equal(t, expected, Top10(textFiveWord))
+	})
+}
