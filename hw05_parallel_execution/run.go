@@ -41,7 +41,7 @@ func Run(tasks []Task, n, m int) error {
 	wg.Wait()
 
 	// Если лимит ошибок превышен, возвращаем ошибку
-	if stopper.StatusOverLimit {
+	if stopper.statusOverLimit {
 		return ErrErrorsLimitExceeded
 	}
 	// Если ошибок не было, возвращаем nil
