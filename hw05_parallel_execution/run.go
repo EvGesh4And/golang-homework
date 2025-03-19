@@ -3,6 +3,7 @@ package hw05parallelexecution
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
 var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
@@ -10,29 +11,39 @@ var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
 type Task func() error
 
 func Run(tasks []Task, n, m int) error {
-	// Канал, являющийся сигналом для генератора - необходимо остановиться (буфер n, чтобы не было блокировок)
-	stopCh := make(chan struct{}, n)
-
-	// Создаём объект для управления остановкой со слежением за лимитом ошибок
-	stopper := NewStopper(stopCh, m)
-
-	// Ожидание завершения генератора и всех воркеров
 	var wg sync.WaitGroup
+	errorCount := atomic.Int64{}
+	taskStream := make(chan Task)
 
-	// Генерация задач и отправка их в канал taskStream
 	wg.Add(1)
-	taskStream := generator(tasks, stopCh, &wg)
+	go func() {
+		defer wg.Done()
+		defer close(taskStream)
+		for _, task := range tasks {
+			if errorCount.Load() >= int64(m) {
+				return
+			}
+			taskStream <- task
+		}
+	}()
 
 	// Запуск n воркеров
-	for i := 0; i < n; i++ {
+	for range n {
 		wg.Add(1)
-		go worker(taskStream, stopper, &wg)
+		go func() {
+			defer wg.Done()
+			for task := range taskStream {
+				if err := task(); err != nil {
+					errorCount.Add(1)
+				}
+			}
+		}()
 	}
 
 	wg.Wait()
 
 	// Если лимит ошибок превышен, возвращаем ошибку
-	if stopper.statusOverLimit {
+	if errorCount.Load() >= int64(m) {
 		return ErrErrorsLimitExceeded
 	}
 	// Если ошибок не было, возвращаем nil

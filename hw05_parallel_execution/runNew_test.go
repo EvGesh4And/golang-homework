@@ -27,14 +27,14 @@ func TestRunEventually(t *testing.T) {
 				defer atomic.AddInt32(&activeWorkers, -1) // Уменьшаем после завершения
 
 				s := 0
-				for i := 0; i < 1_000_000; i++ {
-					s += i * (i + 1) / (i + 1)
+				for range 1_000_000 {
+					s += 5 * 5 / 5
 				}
 
 				time.Sleep(time.Millisecond)
 
-				for i := 0; i < 1_000_000; i++ {
-					s += i * (i + 1) / (i + 1)
+				for range 1_000_000 {
+					s += 5 * 5 / 5
 				}
 
 				atomic.AddInt32(&runTasksCount, 1) // Увеличиваем счетчик выполненных задач
