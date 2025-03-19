@@ -15,18 +15,6 @@ func Run(tasks []Task, n, m int) error {
 	errorCount := atomic.Int64{}
 	taskStream := make(chan Task)
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer close(taskStream)
-		for _, task := range tasks {
-			if errorCount.Load() >= int64(m) {
-				return
-			}
-			taskStream <- task
-		}
-	}()
-
 	// Запуск n воркеров
 	for range n {
 		wg.Add(1)
@@ -39,6 +27,15 @@ func Run(tasks []Task, n, m int) error {
 			}
 		}()
 	}
+
+	// Генератор
+	for _, task := range tasks {
+		if errorCount.Load() >= int64(m) {
+			break
+		}
+		taskStream <- task
+	}
+	close(taskStream)
 
 	wg.Wait()
 

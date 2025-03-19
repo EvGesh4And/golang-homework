@@ -1,6 +1,9 @@
 package hw05parallelexecution
 
 import (
+	"errors"
+	"fmt"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -58,5 +61,37 @@ func TestRunEventually(t *testing.T) {
 		wg.Wait()
 		// Проверяем, что все задачи выполнены
 		require.Equal(t, runTasksCount, int32(tasksCount), "not all tasks were completed")
+	})
+}
+
+func TestRunLastError(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	t.Run("error in the last task, with a one-error limit", func(t *testing.T) {
+		tasksCount := 50
+		tasks := make([]Task, 0, tasksCount)
+
+		var runTasksCount int32
+		// Задачи без ошибок
+		for range tasksCount - 1 {
+			tasks = append(tasks, func() error {
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+				atomic.AddInt32(&runTasksCount, 1)
+				return nil
+			})
+		}
+		// Последняя задача с ошибкой
+		tasks = append(tasks, func() error {
+			time.Sleep(time.Millisecond * time.Duration(rand.Intn(100)))
+			atomic.AddInt32(&runTasksCount, 1)
+			return fmt.Errorf("error from task %d", 49)
+		})
+
+		workersCount := 10
+		maxErrorsCount := 1
+		err := Run(tasks, workersCount, maxErrorsCount)
+
+		require.Truef(t, errors.Is(err, ErrErrorsLimitExceeded), "actual err - %v", err)
+		require.LessOrEqual(t, runTasksCount, int32(tasksCount), "extra tasks were started")
 	})
 }
