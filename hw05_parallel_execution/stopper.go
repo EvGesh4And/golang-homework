@@ -5,7 +5,7 @@ import "sync"
 // Stopper отслеживает количество ошибок и отправляет сигнал остановки,
 // если количество ошибок достигает установленного лимита.
 type Stopper struct {
-	stop            chan<- struct{} // Канал для отправки сигнала остановки
+	stopCh          chan<- struct{} // Канал для отправки сигнала остановки
 	m               sync.Mutex      // Мьютекс для синхронизации доступа к данным
 	count           int             // Счётчик ошибок
 	limit           int             // Лимит ошибок, при достижении которого будет отправлен сигнал остановки
@@ -13,10 +13,10 @@ type Stopper struct {
 }
 
 // NewErrorStopper создаёт новый объект ErrorStopper с заданным каналом и лимитом ошибок.
-func NewStopper(stop chan struct{}, limit int) *Stopper {
+func NewStopper(stopCh chan struct{}, limit int) *Stopper {
 	return &Stopper{
-		stop:  stop,
-		limit: limit,
+		stopCh: stopCh,
+		limit:  limit,
 	}
 }
 
@@ -38,5 +38,5 @@ func (s *Stopper) AddError() {
 // SignalStop отправляет сигнал в канал stop, уведомляя другие горутины или процессы
 // о необходимости остановки.
 func (s *Stopper) SignalStop() {
-	s.stop <- struct{}{}
+	s.stopCh <- struct{}{}
 }
