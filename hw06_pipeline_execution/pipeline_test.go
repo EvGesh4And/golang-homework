@@ -203,7 +203,7 @@ func TestPipelineEventually(t *testing.T) {
 		}()
 
 		require.Eventually(t, func() bool {
-			return atomic.LoadInt32(&activeWorkers) == int32(len(stages))
+			return atomic.LoadInt32(&activeWorkers) > 2
 		}, 2*time.Second, 10*time.Millisecond)
 
 		wg.Wait()

@@ -9,40 +9,41 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
+	checker := func(in In) Out {
+		out := make(Bi)
 
-	checker := func(in In, ch Bi) {
-		defer close(ch)
-		for {
-			select {
-			case <-done:
-				return
-			case v, ok := <-in:
-				if !ok {
-					return
-				}
+		go func() {
+			defer func() {
+				close(out)
+				<-in // Считываем значение из канала, чтобы stage мог завершиться
+				// Считываем либо результат работы stage, либо из закрытого канала
+			}()
+
+			for {
 				select {
 				case <-done:
 					return
-				default:
+				case v, ok := <-in:
+					if !ok {
+						return
+					}
 					select {
 					case <-done:
 						return
-					case ch <- v:
+					case out <- v:
 					}
 				}
 			}
-		}
+		}()
+
+		return out
 	}
 
 	for _, stage := range stages {
-		ch := make(Bi)
-		go checker(in, ch)
-		in = stage(ch)
+		in = stage(checker(in))
 	}
 
-	ch := make(Bi)
+	out := checker(in)
 
-	go checker(in, ch)
-
-	return ch
+	return out
 }
