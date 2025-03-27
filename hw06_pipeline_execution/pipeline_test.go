@@ -3,6 +3,7 @@ package hw06pipelineexecution
 import (
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -150,6 +151,63 @@ func TestAllStageStop(t *testing.T) {
 		wg.Wait()
 
 		require.Len(t, result, 0)
+	})
+}
 
+func TestPipelineEventually(t *testing.T) {
+	var activeWorkers int32
+
+	// Stage generator
+	g := func(_ string, f func(v interface{}) interface{}) Stage {
+		return func(in In) Out {
+			out := make(Bi)
+			go func() {
+				defer close(out)
+				atomic.AddInt32(&activeWorkers, 1)        // Увеличиваем счетчик активных воркеров
+				defer atomic.AddInt32(&activeWorkers, -1) // Уменьшаем после завершения
+				for v := range in {
+					time.Sleep(sleepPerStage)
+					out <- f(v)
+				}
+			}()
+			return out
+		}
+	}
+
+	stages := []Stage{
+		g("Dummy", func(v interface{}) interface{} { return v }),
+		g("Multiplier (* 2)", func(v interface{}) interface{} { return v.(int) * 2 }),
+		g("Adder (+ 100)", func(v interface{}) interface{} { return v.(int) + 100 }),
+		g("Stringifier", func(v interface{}) interface{} { return strconv.Itoa(v.(int)) }),
+	}
+
+	t.Run("Eventually case", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{1, 2, 3, 4, 5}
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+			close(in)
+		}()
+
+		result := make([]string, 0, 10)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for s := range ExecutePipeline(in, nil, stages...) {
+				result = append(result, s.(string))
+			}
+		}()
+
+		require.Eventually(t, func() bool {
+			return atomic.LoadInt32(&activeWorkers) > 2
+		}, 2*time.Second, 10*time.Millisecond)
+
+		wg.Wait()
+
+		require.Equal(t, []string{"102", "104", "106", "108", "110"}, result)
 	})
 }
