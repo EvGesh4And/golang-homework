@@ -18,7 +18,6 @@ var (
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
-
 	if fromPath == toPath {
 		return fmt.Errorf("%w: %q", ErrCopyToSameFile, fromPath)
 	}
