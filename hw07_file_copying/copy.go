@@ -12,9 +12,23 @@ import (
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
+	ErrNegativeOffset        = errors.New("negative offset")
+	ErrNegativeLimit         = errors.New("negative limit")
+	ErrCopyToSameFile        = errors.New("copy to the same file")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
+
+	if fromPath == toPath {
+		return fmt.Errorf("%w: %q", ErrCopyToSameFile, fromPath)
+	}
+	if offset < 0 {
+		return fmt.Errorf("%w: %d", ErrNegativeOffset, offset)
+	}
+	if limit < 0 {
+		return fmt.Errorf("%w: %d", ErrNegativeLimit, limit)
+	}
+
 	// Открываем файл для чтения
 	fromFile, err := os.Open(fromPath)
 	if err != nil {
@@ -77,7 +91,13 @@ func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
 	// Копируем данные с прогрессом
 	_, err = io.Copy(toFile, bar.NewProxyReader(io.LimitReader(fromFile, bytesToCopy)))
 	if err != nil {
-		return fmt.Errorf("copy failed: %w", err)
+		// Удаляем файл в случае ошибки копирования
+		removeErr := os.Remove(toPath)
+		if removeErr != nil && !os.IsNotExist(removeErr) {
+			// Если не удалось удалить, добавляем эту информацию к основной ошибке
+			return fmt.Errorf("failed: %w (and failed to remove partial file: %w)", err, removeErr)
+		}
+		return fmt.Errorf("failed: %w", err)
 	}
 
 	// Устанавливаем права доступа

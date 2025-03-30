@@ -51,9 +51,24 @@ func TestCopy(t *testing.T) {
 			wantErr: ErrOffsetExceedsFileSize,
 		},
 		{
+			name:    "negative offset",
+			offset:  -1,
+			wantErr: ErrNegativeOffset,
+		},
+		{
+			name:    "negative limit",
+			limit:   -1,
+			wantErr: ErrNegativeLimit,
+		},
+		{
 			name:    "nonexistent source file",
 			setup:   func() { srcPath = filepath.Join(tmpDir, "nonexistent.txt") },
 			wantErr: os.ErrNotExist,
+		},
+		{
+			name:    "copy to the same file",
+			setup:   func() { srcPath = filepath.Join(tmpDir, "copy_"+"copy to the same file"+".txt") },
+			wantErr: ErrCopyToSameFile,
 		},
 		{
 			name: "unsupported file type",
