@@ -11,6 +11,7 @@ import (
 func TestCopy(t *testing.T) {
 	tmpDir := t.TempDir()
 	srcPath := filepath.Join(tmpDir, "source.txt")
+	dstPath := ""
 	content := []byte("This is a test file content for copying")
 
 	if err := os.WriteFile(srcPath, content, 0o644); err != nil {
@@ -61,13 +62,16 @@ func TestCopy(t *testing.T) {
 			wantErr: ErrNegativeLimit,
 		},
 		{
-			name:    "nonexistent source file",
+			name:    "invalid path source file",
 			setup:   func() { srcPath = filepath.Join(tmpDir, "nonexistent.txt") },
-			wantErr: os.ErrNotExist,
+			wantErr: ErrInvalidPath,
 		},
 		{
-			name:    "copy to the same file",
-			setup:   func() { srcPath = filepath.Join(tmpDir, "copy_"+"copy to the same file"+".txt") },
+			name: "copy to the same file",
+			setup: func() {
+				srcPath = filepath.Join(tmpDir, "source.txt")
+				dstPath = filepath.Join(tmpDir, "source.txt")
+			},
 			wantErr: ErrCopyToSameFile,
 		},
 		{
@@ -82,11 +86,12 @@ func TestCopy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			dstPath = filepath.Join(tmpDir, "copy_"+tt.name+".txt")
+
 			if tt.setup != nil {
 				tt.setup()
 			}
-
-			dstPath := filepath.Join(tmpDir, "copy_"+tt.name+".txt")
 			err := Copy(srcPath, dstPath, tt.offset, tt.limit)
 
 			if tt.wantErr != nil {

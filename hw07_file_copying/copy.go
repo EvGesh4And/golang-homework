@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/cheggaaa/pb/v3"
 )
@@ -15,10 +16,26 @@ var (
 	ErrNegativeOffset        = errors.New("negative offset")
 	ErrNegativeLimit         = errors.New("negative limit")
 	ErrCopyToSameFile        = errors.New("copy to the same file")
+	ErrInvalidPath           = errors.New("invalid path")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
-	if fromPath == toPath {
+
+	absFrom, err := filepath.Abs(fromPath)
+	if err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidPath, fromPath)
+	}
+	absTo, err := filepath.Abs(toPath)
+	if err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidPath, toPath)
+	}
+
+	realFrom, err := filepath.EvalSymlinks(absFrom)
+	if err != nil {
+		return fmt.Errorf("%w: %q", ErrInvalidPath, fromPath)
+	}
+
+	if realFrom == absTo {
 		return fmt.Errorf("%w: %q", ErrCopyToSameFile, fromPath)
 	}
 	if offset < 0 {
