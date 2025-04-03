@@ -37,23 +37,22 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 		l.queue.MoveToFront(item)
 
 		return true
-	} else {
-		if len(l.items) == l.capacity {
-			item = l.queue.Back()
-			b := item.Value.(box)
-			keyDel := b.key
-			delete(l.items, keyDel)
-			l.queue.Remove(item)
-		}
-		l.queue.PushFront(box{key: key, value: value})
-		l.items[key] = l.queue.Front()
-
-		return false
 	}
+
+	if len(l.items) == l.capacity {
+		item := l.queue.Back()
+		b := item.Value.(box)
+		keyDel := b.key
+		delete(l.items, keyDel)
+		l.queue.Remove(item)
+	}
+	l.queue.PushFront(box{key: key, value: value})
+	l.items[key] = l.queue.Front()
+
+	return false
 }
 
 func (l *lruCache) Get(key Key) (interface{}, bool) {
-
 	if item, ok := l.items[key]; ok {
 		var v interface{}
 		b := item.Value.(box)
