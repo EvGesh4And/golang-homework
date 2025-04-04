@@ -1,7 +1,6 @@
 package hw04lrucache
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -84,7 +83,6 @@ func TestListScript(t *testing.T) {
 		actual := []int{}
 		for i := l.Front(); i != nil; i = i.Next {
 			actual = append(actual, i.Value.(int))
-			fmt.Println(i)
 		}
 		require.Equal(t, expected, actual)
 	})
@@ -115,6 +113,13 @@ func TestListScript(t *testing.T) {
 		expected = []int{2, 5, 4, 100}
 		actual = []int{}
 		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, expected, actual)
+
+		expected = []int{100, 4, 5, 2}
+		actual = []int{}
+		for i := l.Back(); i != nil; i = i.Prev {
 			actual = append(actual, i.Value.(int))
 		}
 		require.Equal(t, expected, actual)

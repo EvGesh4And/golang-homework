@@ -1,6 +1,9 @@
 package hw04lrucache
 
 import (
+	"math/rand"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -46,31 +49,59 @@ func TestCache(t *testing.T) {
 		require.Nil(t, val)
 	})
 
-	// t.Run("purge logic", func(t *testing.T) {
-	// 	// Write me
-	// })
+	t.Run("purge logic", func(t *testing.T) {
+		c := NewCache(3)
+
+		c.Set("A1", 1)
+		c.Set("A2", 2)
+		c.Set("A3", 3)
+		v, status := c.Get("A1")
+		require.Equal(t, 1, v)
+		require.True(t, status)
+		c.Set("A4", 4)
+		v, status = c.Get("A2")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		c.Clear()
+
+		v, status = c.Get("A1")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A2")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A3")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A4")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+	})
 }
 
-// func TestCacheMultithreading(t *testing.T) {
-// 	t.Skip() // Remove me if task with asterisk completed.
+func TestCacheMultithreading(t *testing.T) {
+	_ = t
+	c := NewCache(10)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 
-// 	c := NewCache(10)
-// 	wg := &sync.WaitGroup{}
-// 	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1_000_000; i++ {
+			c.Set(Key(strconv.Itoa(i)), i)
+		}
+	}()
 
-// 	go func() {
-// 		defer wg.Done()
-// 		for i := 0; i < 1_000_000; i++ {
-// 			c.Set(Key(strconv.Itoa(i)), i)
-// 		}
-// 	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1_000_000; i++ {
+			c.Get(Key(strconv.Itoa(rand.Intn(1_000_000))))
+		}
+	}()
 
-// 	go func() {
-// 		defer wg.Done()
-// 		for i := 0; i < 1_000_000; i++ {
-// 			c.Get(Key(strconv.Itoa(rand.Intn(1_000_000))))
-// 		}
-// 	}()
-
-// 	wg.Wait()
-// }
+	wg.Wait()
+}
