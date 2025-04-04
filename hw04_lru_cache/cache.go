@@ -45,15 +45,18 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 		return true
 	}
 
-	if len(l.items) == l.capacity {
-		item := l.queue.Back()
-		b := item.Value.(box)
-		keyDel := b.key
-		delete(l.items, keyDel)
-		l.queue.Remove(item)
+	if l.capacity > 0 {
+		if len(l.items) == l.capacity {
+			item := l.queue.Back()
+			b := item.Value.(box)
+			keyDel := b.key
+			delete(l.items, keyDel)
+			l.queue.Remove(item)
+		}
+		l.queue.PushFront(box{key: key, value: value})
+		l.items[key] = l.queue.Front()
 	}
-	l.queue.PushFront(box{key: key, value: value})
-	l.items[key] = l.queue.Front()
+
 	return false
 }
 

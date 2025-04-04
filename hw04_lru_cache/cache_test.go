@@ -20,6 +20,25 @@ func TestCache(t *testing.T) {
 		require.False(t, ok)
 	})
 
+	t.Run("zero capacity", func(t *testing.T) {
+		c := NewCache(0)
+
+		ok := c.Set("aaa", 4)
+		require.False(t, ok)
+
+		_, ok = c.Get("aaa")
+		require.False(t, ok)
+
+		ok = c.Set("bbb", 4)
+		require.False(t, ok)
+
+		ok = c.Set("bbb", 4)
+		require.False(t, ok)
+
+		_, ok = c.Get("bbb")
+		require.False(t, ok)
+	})
+
 	t.Run("simple", func(t *testing.T) {
 		c := NewCache(5)
 

@@ -124,4 +124,41 @@ func TestListScript(t *testing.T) {
 		}
 		require.Equal(t, expected, actual)
 	})
+
+	t.Run("100PushFront", func(t *testing.T) {
+		l := NewList()
+		node := l.PushBack(1)
+		for i := range 100 {
+			_ = i
+			l.MoveToFront(node)
+		}
+		expected := []int{1}
+		actual := []int{}
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, 1, l.Len())
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("100PushFront_v2", func(t *testing.T) {
+		l := NewList()
+		node := l.PushBack(1)
+		l.PushFront(2)
+		l.PushFront(3)
+
+		for i := range 100 {
+			_ = i
+			l.MoveToFront(node)
+		}
+
+		expected := []int{1, 3, 2}
+		actual := []int{}
+
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, 3, l.Len())
+		require.Equal(t, expected, actual)
+	})
 }
