@@ -20,6 +20,25 @@ func TestCache(t *testing.T) {
 		require.False(t, ok)
 	})
 
+	t.Run("zero capacity", func(t *testing.T) {
+		c := NewCache(0)
+
+		ok := c.Set("aaa", 4)
+		require.False(t, ok)
+
+		_, ok = c.Get("aaa")
+		require.False(t, ok)
+
+		ok = c.Set("bbb", 4)
+		require.False(t, ok)
+
+		ok = c.Set("bbb", 4)
+		require.False(t, ok)
+
+		_, ok = c.Get("bbb")
+		require.False(t, ok)
+	})
+
 	t.Run("simple", func(t *testing.T) {
 		c := NewCache(5)
 
@@ -50,13 +69,41 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		c := NewCache(3)
+
+		c.Set("A1", 1)
+		c.Set("A2", 2)
+		c.Set("A3", 3)
+		v, status := c.Get("A1")
+		require.Equal(t, 1, v)
+		require.True(t, status)
+		c.Set("A4", 4)
+		v, status = c.Get("A2")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		c.Clear()
+
+		v, status = c.Get("A1")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A2")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A3")
+		require.Equal(t, nil, v)
+		require.False(t, status)
+
+		v, status = c.Get("A4")
+		require.Equal(t, nil, v)
+		require.False(t, status)
 	})
 }
 
 func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
-
+	_ = t
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
 	wg.Add(2)

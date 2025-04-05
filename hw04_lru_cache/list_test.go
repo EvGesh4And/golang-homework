@@ -49,3 +49,116 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestListScript(t *testing.T) {
+	t.Run("front", func(t *testing.T) {
+		l := NewList()
+
+		l.PushFront(11)
+		node3 := l.PushFront(12)
+		node4 := l.PushFront(13)
+		l.PushFront(14)
+		l.MoveToFront(node4)
+		l.Remove(node3)
+
+		expected := []int{13, 14, 11}
+		actual := []int{}
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("back", func(t *testing.T) {
+		l := NewList()
+
+		l.PushBack(11)
+		node3 := l.PushBack(12)
+		node4 := l.PushBack(13)
+		l.PushBack(14)
+		l.MoveToFront(node4)
+		l.Remove(node3)
+
+		expected := []int{13, 11, 14}
+		actual := []int{}
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("front&back", func(t *testing.T) {
+		expected := []int{3, 4, 5, 2, 10, 10, 3, 100}
+		actual := make([]int, 0, len(expected))
+		l := NewList()
+		node := l.PushBack(2)
+		node2 := l.PushBack(3)
+		actual = append(actual, l.Back().Value.(int))
+		l.PushBack(4)
+		l.PushFront(5)
+		actual = append(actual, l.Back().Value.(int))
+		actual = append(actual, l.Front().Value.(int))
+		l.MoveToFront(node)
+		actual = append(actual, l.Front().Value.(int))
+		node3 := l.PushFront(10)
+		actual = append(actual, l.Front().Value.(int))
+		l.Remove(node2)
+		actual = append(actual, l.Front().Value.(int))
+		actual = append(actual, node2.Value.(int))
+		l.PushBack(100)
+		actual = append(actual, l.Back().Value.(int))
+		require.Equal(t, expected, actual)
+		l.Remove(node3)
+
+		expected = []int{2, 5, 4, 100}
+		actual = []int{}
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, expected, actual)
+
+		expected = []int{100, 4, 5, 2}
+		actual = []int{}
+		for i := l.Back(); i != nil; i = i.Prev {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("100PushFront", func(t *testing.T) {
+		l := NewList()
+		node := l.PushBack(1)
+		for i := range 100 {
+			_ = i
+			l.MoveToFront(node)
+		}
+		expected := []int{1}
+		actual := []int{}
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, 1, l.Len())
+		require.Equal(t, expected, actual)
+	})
+
+	t.Run("100PushFront_v2", func(t *testing.T) {
+		l := NewList()
+		node := l.PushBack(1)
+		l.PushFront(2)
+		l.PushFront(3)
+
+		for i := range 100 {
+			_ = i
+			l.MoveToFront(node)
+		}
+
+		expected := []int{1, 3, 2}
+		actual := []int{}
+
+		for i := l.Front(); i != nil; i = i.Next {
+			actual = append(actual, i.Value.(int))
+		}
+		require.Equal(t, 3, l.Len())
+		require.Equal(t, expected, actual)
+	})
+}
