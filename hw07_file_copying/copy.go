@@ -16,6 +16,7 @@ var (
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 	ErrNegativeOffset        = errors.New("negative offset")
 	ErrNegativeLimit         = errors.New("negative limit")
+	ErrCopyFailed            = errors.New("data copy failed")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
@@ -87,6 +88,15 @@ func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
 		if closeErr != nil && retErr == nil {
 			retErr = fmt.Errorf("failed to close destination file: %w", closeErr)
 		}
+
+		if errors.Is(retErr, ErrCopyFailed) {
+			// Удаляем файл в случае ошибки копирования
+			removeErr := os.Remove(toPath)
+			if removeErr != nil && !os.IsNotExist(removeErr) {
+				// Если не удалось удалить, добавляем эту информацию к основной ошибке
+				retErr = fmt.Errorf("%w (and failed to remove partial file: %w)", retErr, removeErr)
+			}
+		}
 	}()
 
 	// Создаем progress bar
@@ -96,13 +106,7 @@ func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
 	// Копируем данные с прогрессом
 	_, err = io.Copy(toFile, bar.NewProxyReader(io.LimitReader(fromFile, bytesToCopy)))
 	if err != nil {
-		// Удаляем файл в случае ошибки копирования
-		removeErr := os.Remove(toPath)
-		if removeErr != nil && !os.IsNotExist(removeErr) {
-			// Если не удалось удалить, добавляем эту информацию к основной ошибке
-			return fmt.Errorf("failed: %w (and failed to remove partial file: %w)", err, removeErr)
-		}
-		return fmt.Errorf("failed: %w", err)
+		return fmt.Errorf("%w: %w", ErrCopyFailed, err)
 	}
 
 	// Устанавливаем права доступа
