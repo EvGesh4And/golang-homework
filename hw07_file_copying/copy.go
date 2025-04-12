@@ -5,22 +5,30 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/cheggaaa/pb/v3"
 )
 
 var (
+	ErrCopyToSameFile        = errors.New("copy to the same file")
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 	ErrNegativeOffset        = errors.New("negative offset")
 	ErrNegativeLimit         = errors.New("negative limit")
-	ErrCopyToSameFile        = errors.New("copy to the same file")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
-	if fromPath == toPath {
+	// Проверка путей на корректность и клонов
+	same, err := isSameFile(fromPath, toPath)
+	if err != nil {
+		return fmt.Errorf("path verification failed: %w", err)
+	}
+	if same {
 		return fmt.Errorf("%w: %q", ErrCopyToSameFile, fromPath)
 	}
+
+	// Првоерка флагов
 	if offset < 0 {
 		return fmt.Errorf("%w: %d", ErrNegativeOffset, offset)
 	}
@@ -74,12 +82,10 @@ func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
 		return fmt.Errorf("failed to create destination file: %w", err)
 	}
 	defer func() {
-		// Сначала пробуем синхронизировать данные на диск
-		syncErr := toFile.Sync()
 		closeErr := toFile.Close()
 
-		if (syncErr != nil || closeErr != nil) && retErr == nil {
-			retErr = fmt.Errorf("failed to sync/close destination file (sync: %w, close: %w)", syncErr, closeErr)
+		if closeErr != nil && retErr == nil {
+			retErr = fmt.Errorf("failed to close destination file: %w", closeErr)
 		}
 	}()
 
@@ -105,4 +111,43 @@ func Copy(fromPath, toPath string, offset, limit int64) (retErr error) {
 	}
 
 	return nil
+}
+
+func isSameFile(path1, path2 string) (bool, error) {
+	// Нормализуем пути (убираем ./ и ../)
+	absPath1, err := filepath.Abs(path1)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve path %q: %w", path1, err)
+	}
+
+	absPath2, err := filepath.Abs(path2)
+	if err != nil {
+		return false, fmt.Errorf("failed to resolve path %q: %w", path2, err)
+	}
+
+	// Быстрая проверка: если пути идентичны после нормализации
+	if absPath1 == absPath2 {
+		return true, nil
+	}
+
+	// Проверяем существование первого файла
+	info1, err := os.Stat(absPath1)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // Файл не существует - значит не совпадают
+		}
+		return false, fmt.Errorf("failed to access %q: %w", absPath1, err)
+	}
+
+	// Проверяем существование второго файла
+	info2, err := os.Stat(absPath2)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil // Файл не существует - значит не совпадают
+		}
+		return false, fmt.Errorf("failed to access %q: %w", absPath2, err)
+	}
+
+	// Сравниваем файлы (учитывает hard links и симлинки)
+	return os.SameFile(info1, info2), nil
 }
