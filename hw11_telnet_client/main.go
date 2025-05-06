@@ -52,9 +52,11 @@ func main() {
 			case io.EOF:
 				log.Print("The input source is closed")
 				cancel()
+				return
 			default:
 				log.Printf("Sending error: %v", err)
 				cancel()
+				return
 			}
 		}
 	}()
@@ -65,9 +67,11 @@ func main() {
 			case io.EOF:
 				log.Print("The server has closed the connection")
 				cancel()
+				return
 			default:
 				log.Printf("Receiving error: %v", err)
 				cancel()
+				return
 			}
 		}
 	}()
