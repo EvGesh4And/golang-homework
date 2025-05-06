@@ -59,8 +59,9 @@ func (mtc *MyTelnetClinet) Close() error {
 
 func (mtc *MyTelnetClinet) Send() error {
 	scanner := bufio.NewScanner(mtc.in)
-
+	log.Print("Start Send")
 	for scanner.Scan() {
+		log.Print("Step Send")
 		_, err := mtc.conn.Write([]byte(scanner.Text() + "\n"))
 		if err != nil {
 			return err
@@ -72,7 +73,9 @@ func (mtc *MyTelnetClinet) Send() error {
 
 func (mtc *MyTelnetClinet) Receive() error {
 	scanner := bufio.NewScanner(mtc.conn)
+	log.Print("Start Receive")
 	for scanner.Scan() {
+		log.Print("Step Receive")
 		_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
 		if err != nil {
 			return err
