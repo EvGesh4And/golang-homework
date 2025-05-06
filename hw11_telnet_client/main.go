@@ -46,7 +46,7 @@ func main() {
 	}()
 	go func() {
 		defer wg.Done()
-		go telClient.Receive()
+		telClient.Receive()
 	}()
 	wg.Wait()
 }
