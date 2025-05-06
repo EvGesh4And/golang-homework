@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -37,6 +38,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
-	go telClient.Send()
-	go telClient.Receive()
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		telClient.Send()
+	}()
+	go func() {
+		defer wg.Done()
+		go telClient.Receive()
+	}()
+	wg.Wait()
 }
