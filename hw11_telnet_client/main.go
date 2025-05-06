@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
+	"io"
 	"log"
 	"net"
 	"os"
-	"sync"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -33,20 +36,41 @@ func main() {
 	}
 
 	telClient := NewTelnetClient(addr.String(), *timeout, os.Stdin, os.Stdout)
-	log.Print(addr.String())
+
 	err = telClient.Connect()
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("go-telnet: %v", err)
 	}
-	wg := sync.WaitGroup{}
-	wg.Add(2)
+	defer telClient.Close()
+
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+
 	go func() {
-		defer wg.Done()
-		telClient.Send()
+		for {
+			switch err := telClient.Send(); err {
+			case nil:
+			case io.EOF:
+				log.Print("The input source is closed")
+				cancel()
+			default:
+				log.Printf("Sending error: %v", err)
+				cancel()
+			}
+		}
 	}()
 	go func() {
-		defer wg.Done()
-		telClient.Receive()
+		for {
+			switch err := telClient.Receive(); err {
+			case nil:
+			case io.EOF:
+				log.Print("The server has closed the connection")
+				cancel()
+			default:
+				log.Printf("Receiving error: %v", err)
+				cancel()
+			}
+		}
 	}()
-	wg.Wait()
+
+	<-ctx.Done()
 }

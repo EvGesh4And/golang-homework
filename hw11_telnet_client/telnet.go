@@ -43,44 +43,44 @@ func (mtc *MyTelnetClinet) Connect() error {
 	return nil
 }
 
+func (mtc *MyTelnetClinet) Send() error {
+	scanner := bufio.NewScanner(mtc.in)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return err
+		} else {
+			return io.EOF
+		}
+	}
+	_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (mtc *MyTelnetClinet) Receive() error {
+	scanner := bufio.NewScanner(mtc.conn)
+	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return err
+		} else {
+			return io.EOF
+		}
+	}
+	_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (mtc *MyTelnetClinet) Close() error {
 	if mtc.conn != nil {
 		err := mtc.conn.Close()
 		if err != nil {
 			return err
 		}
-		err = mtc.in.Close()
-		if err != nil {
-			return err
-		}
 	}
-	return nil
-}
-
-func (mtc *MyTelnetClinet) Send() error {
-	scanner := bufio.NewScanner(mtc.in)
-	log.Print("Start Send")
-	for scanner.Scan() {
-		log.Print("Step Send")
-		_, err := mtc.conn.Write([]byte(scanner.Text() + "\n"))
-		if err != nil {
-			return err
-		}
-	}
-	log.Print("Stop Send")
-	return nil
-}
-
-func (mtc *MyTelnetClinet) Receive() error {
-	scanner := bufio.NewScanner(mtc.conn)
-	log.Print("Start Receive")
-	for scanner.Scan() {
-		log.Print("Step Receive")
-		_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
-		if err != nil {
-			return err
-		}
-	}
-	log.Print("Stop Receive")
 	return nil
 }
