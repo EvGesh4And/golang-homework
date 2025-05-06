@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"io"
 	"log"
 	"net"
@@ -31,22 +30,16 @@ type MyTelnetClinet struct {
 	in      io.ReadCloser
 	out     io.Writer
 	conn    net.Conn
-	ctx     context.Context
 }
 
 func (mtc *MyTelnetClinet) Connect() error {
-	ctx, _ := context.WithTimeout(context.Background(), mtc.timeout)
-	// defer cancel()
 
-	dial := net.Dialer{}
-	conn, err := dial.DialContext(ctx, "tcp", mtc.address)
+	conn, err := net.DialTimeout("tcp", mtc.address, mtc.timeout)
 	if err != nil {
 		return err
 	}
-	// defer conn.Close()
 	log.Printf("Connected to %s", mtc.address)
 	mtc.conn = conn
-	mtc.ctx = ctx
 	return nil
 }
 
@@ -73,6 +66,7 @@ func (mtc *MyTelnetClinet) Send() error {
 			return err
 		}
 	}
+	log.Print("Stop Send")
 	return nil
 }
 
@@ -84,5 +78,6 @@ func (mtc *MyTelnetClinet) Receive() error {
 			return err
 		}
 	}
+	log.Print("Stop Receive")
 	return nil
 }
