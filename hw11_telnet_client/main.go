@@ -50,7 +50,7 @@ func main() {
 			switch err := telClient.Send(); err {
 			case nil:
 			case io.EOF:
-				log.Print("The input source is closed")
+				log.Print("The input source is closed (EOF)")
 				cancel()
 				return
 			default:
@@ -77,4 +77,5 @@ func main() {
 	}()
 
 	<-ctx.Done()
+	log.Print("The program has completed its work")
 }
