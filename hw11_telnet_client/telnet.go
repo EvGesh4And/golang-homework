@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"io"
-	"log"
 	"net"
 	"time"
 )
@@ -38,7 +37,6 @@ func (mtc *MyTelnetClinet) Connect() error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Connected to %s", mtc.address)
 	mtc.conn = conn
 	return nil
 }

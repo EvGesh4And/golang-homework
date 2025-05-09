@@ -26,36 +26,39 @@ func main() {
 	// Проверяем наличие двух позиционных аргументов: host и port
 	args := pflag.Args()
 	if len(args) < 2 {
-		log.Fatal("Not all operands are specified")
+		log.Fatal("go-telnet: not all operands are specified")
 	}
 	host := args[0]
 	port := args[1]
 	addr, err := net.ResolveTCPAddr("tcp", host+":"+port)
 	if err != nil {
-		log.Fatalf("Incorrect address: %v", err)
+		log.Fatalf("go-telnet: incorrect address: %v", err)
 	}
 
 	telClient := NewTelnetClient(addr.String(), *timeout, os.Stdin, os.Stdout)
 
 	err = telClient.Connect()
 	if err != nil {
-		log.Fatalf("go-telnet: %v", err)
+		log.Fatalf("go-telnet: connection error: %v", err)
 	}
+	log.Printf("go-telnet: connected to %s", addr.String())
 	defer telClient.Close()
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT)
 
+	inputDone := make(chan struct{})
+	errDone := make(chan struct{})
 	go func() {
 		for {
 			switch err := telClient.Send(); err {
 			case nil:
 			case io.EOF:
-				log.Print("The input source is closed (EOF)")
-				cancel()
+				log.Print("go-telnet: input source is closed")
+				close(inputDone)
 				return
 			default:
-				log.Printf("Sending error: %v", err)
-				cancel()
+				log.Printf("go-telnet: sending error: %v", err)
+				close(errDone)
 				return
 			}
 		}
@@ -65,17 +68,23 @@ func main() {
 			switch err := telClient.Receive(); err {
 			case nil:
 			case io.EOF:
-				log.Print("The server has closed the connection")
-				cancel()
+				log.Print("go-telnet: server has closed the connection")
+				close(errDone)
 				return
 			default:
-				log.Printf("Receiving error: %v", err)
-				cancel()
+				log.Printf("go-telnet: receiving error: %v", err)
+				close(errDone)
 				return
 			}
 		}
 	}()
 
-	<-ctx.Done()
-	log.Print("The program has completed its work")
+	select {
+	case <-ctx.Done():
+		log.Print("go-telnet: interrupted by user (Ctrl+C)")
+	case <-inputDone:
+		log.Print("go-telnet: input closed by user (Ctrl+D)")
+	case <-errDone:
+		os.Exit(1)
+	}
 }
