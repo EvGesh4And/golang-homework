@@ -44,7 +44,8 @@ func main() {
 	log.Printf("go-telnet: connected to %s", addr.String())
 	defer telClient.Close()
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	defer cancel()
 
 	inputDone := make(chan struct{})
 	errDone := make(chan struct{})

@@ -50,7 +50,7 @@ func (mtc *MyTelnetClinet) Send() error {
 			return io.EOF
 		}
 	}
-	_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
+	_, err := mtc.conn.Write([]byte(scanner.Text() + "\n")) // отправка по сети
 	if err != nil {
 		return err
 	}
