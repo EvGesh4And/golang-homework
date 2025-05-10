@@ -55,7 +55,11 @@ func main() {
 	go func() {
 		defer cancel()
 		if err := telClient.Receive(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+			select {
+			case <-ctx.Done():
+			default:
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
 		}
 	}()
 

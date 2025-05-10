@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"time"
@@ -28,7 +27,7 @@ type MyTelnetClinet struct {
 	timeout time.Duration
 	in      io.ReadCloser
 	out     io.Writer
-	conn    *net.TCPConn
+	conn    net.Conn
 }
 
 func (mtc *MyTelnetClinet) Connect() error {
@@ -36,24 +35,17 @@ func (mtc *MyTelnetClinet) Connect() error {
 	if err != nil {
 		return err
 	}
-	tcpConn, ok := conn.(*net.TCPConn)
-	if !ok {
-		conn.Close()
-		return fmt.Errorf("not a TCP connection")
-	}
-	mtc.conn = tcpConn
+	mtc.conn = conn
 	return nil
 }
 
 func (mtc *MyTelnetClinet) Send() error {
 	_, err := io.Copy(mtc.conn, mtc.in)
-	mtc.conn.CloseWrite()
 	return err
 }
 
 func (mtc *MyTelnetClinet) Receive() error {
 	_, err := io.Copy(mtc.out, mtc.conn)
-	mtc.conn.CloseRead()
 	return err
 }
 
