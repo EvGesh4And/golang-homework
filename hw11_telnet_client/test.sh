@@ -3,10 +3,26 @@ set -xeuo pipefail
 
 go build -o go-telnet
 
+# Запускаем сервер
 (echo -e "Hello\nFrom\nNC\n" && cat 2>/dev/null) | nc -l localhost 4242 >/tmp/nc.out &
 NC_PID=$!
 
-sleep 1
+# Проверяем доступность порта перед запуском клиента
+for i in {1..10}; do
+  if nc -z localhost 4242; then
+    break
+  fi
+  sleep 0.1
+done
+
+# Если порт так и не стал доступен - выходим с ошибкой
+if ! nc -z localhost 4242; then
+  echo "Error: port 4242 not available"
+  kill ${NC_PID} 2>/dev/null || true
+  exit 1
+fi
+
+# Запускаем клиент
 (echo -e "I\nam\nTELNET client\n" && cat 2>/dev/null) | ./go-telnet --timeout=5s localhost 4242 >/tmp/telnet.out &
 TL_PID=$!
 
