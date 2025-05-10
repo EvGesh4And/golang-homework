@@ -3,21 +3,22 @@ set -xeuo pipefail
 
 go build -o go-telnet
 
-# Запускаем сервер
+# Запускаем сервер в фоне
 (echo -e "Hello\nFrom\nNC\n" && cat 2>/dev/null) | nc -l localhost 4242 >/tmp/nc.out &
 NC_PID=$!
 
-# Проверяем доступность порта перед запуском клиента
+# Альтернативная проверка порта без nc -z
 for i in {1..10}; do
-  if nc -z localhost 4242; then
+  # Используем ss для проверки listening-порта
+  if ss -tuln | grep -q ':4242 '; then
     break
   fi
-  sleep 0.1
+  sleep 0.5
 done
 
-# Если порт так и не стал доступен - выходим с ошибкой
-if ! nc -z localhost 4242; then
-  echo "Error: port 4242 not available"
+# Проверяем, что сервер действительно слушает порт
+if ! ss -tuln | grep -q ':4242 '; then
+  echo "Error: port 4242 not listening"
   kill ${NC_PID} 2>/dev/null || true
   exit 1
 fi
