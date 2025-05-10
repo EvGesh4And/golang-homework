@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -48,7 +49,11 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
 	defer cancel()
 
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	go func() {
+		defer wg.Done()
 		for {
 			err := telClient.Send()
 			switch {
@@ -66,6 +71,7 @@ func main() {
 		}
 	}()
 	go func() {
+		defer wg.Done()
 		for {
 			err := telClient.Receive()
 			switch {
@@ -82,7 +88,7 @@ func main() {
 			}
 		}
 	}()
-
+	wg.Wait()
 	// Ожидаем отмену
 	<-ctx.Done()
 }
