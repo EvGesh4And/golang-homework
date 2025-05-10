@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -62,4 +63,104 @@ func TestTelnetClient(t *testing.T) {
 
 		wg.Wait()
 	})
+
+	t.Run("SIGINT", func(t *testing.T) {
+		l, err := net.Listen("tcp", "127.0.0.1:")
+		require.NoError(t, err)
+		defer func() { require.NoError(t, l.Close()) }()
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		errChan := make(chan error, 1)
+
+		go func() {
+			defer wg.Done()
+
+			in := &bytes.Buffer{}
+			out := &bytes.Buffer{}
+
+			timeout := 10 * time.Second
+			client := NewTelnetClient(l.Addr().String(), timeout, io.NopCloser(in), out)
+
+			if err := client.Connect(); err != nil {
+				errChan <- err
+				return
+			}
+
+			time.Sleep(100 * time.Millisecond)
+			err := client.Close()
+			errChan <- err
+		}()
+
+		go func() {
+			defer wg.Done()
+			conn, err := l.Accept()
+			require.NoError(t, err)
+			defer func() { _ = conn.Close() }()
+		}()
+
+		wg.Wait()
+
+		select {
+		case err := <-errChan:
+			require.NoError(t, err)
+		case <-time.After(1 * time.Second):
+			t.Fatal("timeout waiting for client to close")
+		}
+	})
+
+	t.Run("EOF (Ctrl+D)", func(t *testing.T) {
+		l, err := net.Listen("tcp", "127.0.0.1:")
+		require.NoError(t, err)
+		defer func() { require.NoError(t, l.Close()) }()
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		errChan := make(chan error, 1)
+
+		// Клиентская сторона
+		go func() {
+			defer wg.Done()
+
+			r, w := io.Pipe()
+			_ = w.Close()
+
+			out := &bytes.Buffer{}
+			timeout := 10 * time.Second
+
+			client := NewTelnetClient(l.Addr().String(), timeout, r, out)
+
+			if err := client.Connect(); err != nil {
+				errChan <- err
+				return
+			}
+
+			err := client.Send()
+			errChan <- err
+
+			_ = client.Close()
+		}()
+
+		// Серверная сторона
+		go func() {
+			defer wg.Done()
+			conn, err := l.Accept()
+			require.NoError(t, err)
+			defer func() { _ = conn.Close() }()
+		}()
+
+		wg.Wait()
+
+		select {
+		case err := <-errChan:
+			if err != nil && !errors.Is(err, io.EOF) {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		case <-time.After(1 * time.Second):
+			t.Fatal("timeout waiting for client to handle EOF")
+		}
+	})
+
 }
