@@ -24,12 +24,14 @@ func main() {
 	args := pflag.Args()
 	if len(args) < 2 {
 		fmt.Fprintln(os.Stderr, "not all operands are specified")
+		return
 	}
 	host, port := args[0], args[1]
 
 	addr, err := net.ResolveTCPAddr("tcp", host+":"+port)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
+		return
 	}
 
 	telClient := NewTelnetClient(addr.String(), *ptrTimeout, os.Stdin, os.Stdout)
@@ -39,6 +41,7 @@ func main() {
 	err = telClient.Connect()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
+		return
 	}
 	defer telClient.Close()
 	fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr.String())
