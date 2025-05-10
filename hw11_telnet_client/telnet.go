@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"io"
 	"net"
 	"time"
@@ -41,14 +40,7 @@ func (mtc *MyTelnetClinet) Connect() error {
 }
 
 func (mtc *MyTelnetClinet) Send() error {
-	scanner := bufio.NewScanner(mtc.in)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-		return io.EOF
-	}
-	_, err := mtc.conn.Write([]byte(scanner.Text() + "\n")) // отправка по сети
+	_, err := io.Copy(mtc.conn, mtc.in)
 	if err != nil {
 		return err
 	}
@@ -56,14 +48,7 @@ func (mtc *MyTelnetClinet) Send() error {
 }
 
 func (mtc *MyTelnetClinet) Receive() error {
-	scanner := bufio.NewScanner(mtc.conn)
-	if !scanner.Scan() {
-		if err := scanner.Err(); err != nil {
-			return err
-		}
-		return io.EOF
-	}
-	_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
+	_, err := io.Copy(mtc.out, mtc.conn)
 	if err != nil {
 		return err
 	}
