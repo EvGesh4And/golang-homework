@@ -162,5 +162,4 @@ func TestTelnetClient(t *testing.T) {
 			t.Fatal("timeout waiting for client to handle EOF")
 		}
 	})
-
 }
