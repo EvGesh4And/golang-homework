@@ -56,11 +56,5 @@ func (mtc *MyTelnetClinet) Receive() error {
 }
 
 func (mtc *MyTelnetClinet) Close() error {
-	if mtc.conn != nil {
-		err := mtc.conn.Close()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return mtc.conn.Close()
 }

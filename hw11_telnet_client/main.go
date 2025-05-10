@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -45,21 +46,40 @@ func main() {
 	}
 	defer telClient.Close()
 	fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr.String())
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
 
-	go func() {
-		defer cancel()
-		if err := telClient.Send(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-	}()
-	go func() {
-		defer cancel()
-		if err := telClient.Receive(); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-	}()
+	go dd(ctx, wg, telClient.Send, cancel)
+	go dd(ctx, wg, telClient.Receive, cancel)
+
 	<-ctx.Done()
+	fmt.Fprintln(os.Stderr, "...Interrupt received, closing connection")
+	wg.Wait()
 	fmt.Fprintf(os.Stderr, "...Connection to %s is closed\n", addr.String())
 }
+
+func dd(ctx context.Context, wg *sync.WaitGroup, f func() error, cancel context.CancelFunc) {
+	defer wg.Done()
+	defer cancel()
+	if err := f(); err != nil {
+		select {
+		case <-ctx.Done():
+		default:
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
+		return
+	}
+}
+
+// go func() {
+// 	defer wg.Done()
+// 	defer cancel()
+// 	if err := telClient.Send(); err != nil {
+// 		select {
+// 		case <-ctx.Done():
+// 		default:
+// 			fmt.Fprintln(os.Stderr, err.Error())
+// 		}
+// 		return
+// 	}
+// }()
