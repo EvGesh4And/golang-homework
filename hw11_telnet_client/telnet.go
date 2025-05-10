@@ -32,7 +32,6 @@ type MyTelnetClinet struct {
 }
 
 func (mtc *MyTelnetClinet) Connect() error {
-
 	conn, err := net.DialTimeout("tcp", mtc.address, mtc.timeout)
 	if err != nil {
 		return err
@@ -46,9 +45,8 @@ func (mtc *MyTelnetClinet) Send() error {
 	if !scanner.Scan() {
 		if err := scanner.Err(); err != nil {
 			return err
-		} else {
-			return io.EOF
 		}
+		return io.EOF
 	}
 	_, err := mtc.conn.Write([]byte(scanner.Text() + "\n")) // отправка по сети
 	if err != nil {
@@ -62,9 +60,8 @@ func (mtc *MyTelnetClinet) Receive() error {
 	if !scanner.Scan() {
 		if err := scanner.Err(); err != nil {
 			return err
-		} else {
-			return io.EOF
 		}
+		return io.EOF
 	}
 	_, err := mtc.out.Write([]byte(scanner.Text() + "\n"))
 	if err != nil {

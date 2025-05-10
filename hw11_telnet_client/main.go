@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"net"
@@ -47,45 +48,41 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
 	defer cancel()
 
-	inputDone := make(chan struct{})
-	errDone := make(chan struct{})
 	go func() {
 		for {
-			switch err := telClient.Send(); err {
-			case nil:
-			case io.EOF:
+			err := telClient.Send()
+			switch {
+			case err == nil:
+				// всё ок
+			case errors.Is(err, io.EOF):
 				log.Print("go-telnet: input source is closed")
-				close(inputDone)
+				cancel()
 				return
 			default:
 				log.Printf("go-telnet: sending error: %v", err)
-				close(errDone)
+				cancel()
 				return
 			}
 		}
 	}()
 	go func() {
 		for {
-			switch err := telClient.Receive(); err {
-			case nil:
-			case io.EOF:
+			err := telClient.Receive()
+			switch {
+			case err == nil:
+				// всё ок
+			case errors.Is(err, io.EOF):
 				log.Print("go-telnet: server has closed the connection")
-				close(errDone)
+				cancel()
 				return
 			default:
 				log.Printf("go-telnet: receiving error: %v", err)
-				close(errDone)
+				cancel()
 				return
 			}
 		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		log.Print("go-telnet: interrupted by user (Ctrl+C)")
-	case <-inputDone:
-		log.Print("go-telnet: input closed by user (Ctrl+D)")
-	case <-errDone:
-		os.Exit(1)
-	}
+	// Ожидаем отмену
+	<-ctx.Done()
 }
