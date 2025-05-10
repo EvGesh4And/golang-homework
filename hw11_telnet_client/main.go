@@ -37,7 +37,7 @@ func main() {
 
 	telClient := NewTelnetClient(addr.String(), *ptrTimeout, os.Stdin, os.Stdout)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	err = telClient.Connect()
 	if err != nil {
@@ -63,11 +63,7 @@ func execute(ctx context.Context, wg *sync.WaitGroup, f func() error, cancel con
 	defer wg.Done()
 	defer cancel()
 	if err := f(); err != nil {
-		select {
-		case <-ctx.Done():
-		default:
-			fmt.Fprintln(os.Stderr, err.Error())
-		}
+		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 }
