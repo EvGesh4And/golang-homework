@@ -49,8 +49,31 @@ func main() {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
 
-	go dd(ctx, wg, telClient.Send, cancel)
-	go dd(ctx, wg, telClient.Receive, cancel)
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := telClient.Send(); err != nil {
+			select {
+			case <-ctx.Done():
+			default:
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		defer cancel()
+		if err := telClient.Receive(); err != nil {
+			select {
+			case <-ctx.Done():
+			default:
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
+		}
+	}()
 
 	<-ctx.Done()
 	fmt.Fprintln(os.Stderr, "...Interrupt received, closing connection")
@@ -58,23 +81,10 @@ func main() {
 	fmt.Fprintf(os.Stderr, "...Connection to %s is closed\n", addr.String())
 }
 
-func dd(ctx context.Context, wg *sync.WaitGroup, f func() error, cancel context.CancelFunc) {
-	defer wg.Done()
-	defer cancel()
-	if err := f(); err != nil {
-		select {
-		case <-ctx.Done():
-		default:
-			fmt.Fprintln(os.Stderr, err.Error())
-		}
-		return
-	}
-}
-
-// go func() {
+// func dd(ctx context.Context, wg *sync.WaitGroup, f func() error, cancel context.CancelFunc) {
 // 	defer wg.Done()
 // 	defer cancel()
-// 	if err := telClient.Send(); err != nil {
+// 	if err := f(); err != nil {
 // 		select {
 // 		case <-ctx.Done():
 // 		default:
@@ -82,4 +92,4 @@ func dd(ctx context.Context, wg *sync.WaitGroup, f func() error, cancel context.
 // 		}
 // 		return
 // 	}
-// }()
+// }
