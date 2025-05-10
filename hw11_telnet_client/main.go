@@ -55,7 +55,6 @@ func main() {
 			default:
 				fmt.Fprintln(os.Stderr, err.Error())
 			}
-			return
 		}
 	}()
 	go func() {
@@ -67,7 +66,6 @@ func main() {
 			default:
 				fmt.Fprintln(os.Stderr, err.Error())
 			}
-			return
 		}
 	}()
 
