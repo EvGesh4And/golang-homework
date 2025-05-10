@@ -49,6 +49,7 @@ func main() {
 	go func() {
 		defer cancel()
 		if err := telClient.Send(); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
 			select {
 			case <-ctx.Done():
 			default:
@@ -60,6 +61,7 @@ func main() {
 	go func() {
 		defer cancel()
 		if err := telClient.Receive(); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
 			select {
 			case <-ctx.Done():
 			default:
