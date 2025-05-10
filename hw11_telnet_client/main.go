@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -40,11 +41,13 @@ func main() {
 
 	err = telClient.Connect()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Println(err)
+		// fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 	defer telClient.Close()
-	fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr.String())
+	// fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr.String())
+	log.Printf("...Connected to %s!\n", addr)
 
 	go func() {
 		defer cancel()
