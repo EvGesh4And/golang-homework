@@ -33,7 +33,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
-
+	fmt.Println(*ptrTimeout)
 	telClient := NewTelnetClient(addr.String(), *ptrTimeout, os.Stdin, os.Stdout)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
