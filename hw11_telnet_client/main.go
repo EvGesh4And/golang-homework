@@ -56,5 +56,5 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	fmt.Fprintf(os.Stderr, "...Connection to %s is closed\n", addr.String())
+	fmt.Fprintf(os.Stderr, "...Connection to %s is closed\n", addr)
 }
