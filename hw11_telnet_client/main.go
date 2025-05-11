@@ -28,23 +28,19 @@ func main() {
 	}
 	host, port := args[0], args[1]
 
-	addr, err := net.ResolveTCPAddr("tcp", host+":"+port)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		return
-	}
+	addr := net.JoinHostPort(host, port)
 
-	telClient := NewTelnetClient(addr.String(), *ptrTimeout, os.Stdin, os.Stdout)
+	telClient := NewTelnetClient(addr, *ptrTimeout, os.Stdin, os.Stdout)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
-	err = telClient.Connect()
+	err := telClient.Connect()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		return
 	}
 	defer telClient.Close()
-	fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr.String())
+	fmt.Fprintf(os.Stderr, "...Connected to %s\n", addr)
 
 	go func() {
 		defer cancel()
