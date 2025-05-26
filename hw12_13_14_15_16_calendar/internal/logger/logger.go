@@ -1,20 +1,59 @@
+// Package logger предоставляет средства для логирования,
+// включая уровни логов, форматирование и вывод в разные источники.
 package logger
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-type Logger struct { // TODO
+// Константы уровней.
+const (
+	LevelError = iota
+	LevelWarn
+	LevelInfo
+	LevelDebug
+)
+
+var levelMap = map[string]int{
+	"error": LevelError,
+	"warn":  LevelWarn,
+	"info":  LevelInfo,
+	"debug": LevelDebug,
+}
+
+type Logger struct {
+	level int
 }
 
 func New(level string) *Logger {
-	return &Logger{}
+	lvl, ok := levelMap[level]
+	if !ok {
+		// Дефолтный уровень
+		lvl = LevelInfo
+	}
+	return &Logger{level: lvl}
 }
 
-func (l Logger) Info(msg string) {
-	fmt.Println(msg)
+func (l Logger) logPrint(level int, levelName string, msg string) {
+	if level > l.level {
+		return
+	}
+	fmt.Printf("[%s] %s %s\n", levelName, time.Now().Format("2006-01-02 15:04:05.000"), msg)
 }
 
 func (l Logger) Error(msg string) {
-	// TODO
+	l.logPrint(LevelError, "ERROR", msg)
 }
 
-// TODO
+func (l Logger) Warn(msg string) {
+	l.logPrint(LevelWarn, "WARN", msg)
+}
+
+func (l Logger) Info(msg string) {
+	l.logPrint(LevelInfo, "INFO", msg)
+}
+
+func (l Logger) Debug(msg string) {
+	l.logPrint(LevelDebug, "DEBUG", msg)
+}

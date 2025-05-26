@@ -8,16 +8,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/app"
+	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "configs/config.toml", "Path to configuration file") // /etc/calendar/config.toml
 }
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 	config := NewConfig()
 	logg := logger.New(config.Logger.Level)
 
-	storage := memorystorage.New()
+	storage := memorystorage.New(logg)
 	calendar := app.New(logg, storage)
 
 	server := internalhttp.NewServer(logg, calendar)
