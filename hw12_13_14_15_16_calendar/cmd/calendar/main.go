@@ -11,6 +11,7 @@ import (
 	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/app"
 	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/server/http"
+	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
@@ -31,7 +32,12 @@ func main() {
 	config := NewConfig()
 	logg := logger.New(config.Logger.Level)
 
-	storage := memorystorage.New(logg)
+	var storage storage.Storage
+
+	if config.Storage.mod == "memory" {
+		storage = memorystorage.New(logg)
+	}
+
 	calendar := app.New(logg, storage)
 
 	server := internalhttp.NewServer(logg, calendar)

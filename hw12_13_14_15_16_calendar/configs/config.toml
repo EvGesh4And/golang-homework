@@ -1,3 +1,6 @@
 [logger]
 level = "INFO"
 mod = "console"
+
+[storage]
+mod = "memory"

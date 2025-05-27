@@ -42,18 +42,22 @@ func (l Logger) logPrint(level int, levelName string, msg string) {
 	fmt.Printf("[%s] %s %s\n", levelName, time.Now().Format("2006-01-02 15:04:05.000"), msg)
 }
 
-func (l Logger) Error(msg string) {
+func (l Logger) Error(form string, args ...any) {
+	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelError, "ERROR", msg)
 }
 
-func (l Logger) Warn(msg string) {
+func (l Logger) Warn(form string, args ...any) {
+	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelWarn, "WARN", msg)
 }
 
-func (l Logger) Info(msg string) {
+func (l Logger) Info(form string, args ...any) {
+	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelInfo, "INFO", msg)
 }
 
-func (l Logger) Debug(msg string) {
+func (l Logger) Debug(form string, args ...any) {
+	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelDebug, "DEBUG", msg)
 }
