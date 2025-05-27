@@ -37,18 +37,18 @@ func (s *Storage) AddEvent(event storage.Event) error {
 		return storage.ErrIDEventRepeated
 	}
 	if !s.intervals.AddIfFree(event.GetInterval()) {
-		s.logg.Error("AddEvent: интервал для ID занят: %s", event.IDEvent)
+		s.logg.Error("AddEvent: временной интервал занят для ID: %s", event.IDEvent)
 		return storage.ErrDateBusy
 	}
 
 	s.eventMap[event.IDEvent] = event
-	s.logg.Debug("AddEvent: added event ID=%s", event.IDEvent)
+	s.logg.Debug("AddEvent: добавлено событие ID: %s", event.IDEvent)
 	return nil
 }
 
 func (s *Storage) UpdateEvent(idEvent storage.IDEvent, newEvent storage.Event) error {
 	if err := newEvent.CheckValid(); err != nil {
-		s.logg.Error("UpdateEvent: invalid new event: %v", err)
+		s.logg.Error("UpdateEvent: некорректное новое событие: %v", err)
 		return err
 	}
 	s.mu.Lock()
@@ -56,17 +56,17 @@ func (s *Storage) UpdateEvent(idEvent storage.IDEvent, newEvent storage.Event) e
 
 	oldEvent, ok := s.eventMap[idEvent]
 	if !ok {
-		s.logg.Error("UpdateEvent: ID does not exist: %s", idEvent)
+		s.logg.Error("UpdateEvent: событие с ID: %s уже существует", idEvent)
 		return storage.ErrIDEventNotExist
 	}
 
 	if !s.intervals.Replace(newEvent.GetInterval(), oldEvent.GetInterval()) {
-		s.logg.Error("UpdateEvent: interval conflict for ID: %s", idEvent)
+		s.logg.Error("UpdateEvent: новый временной интервал для ID: %s уже занят", idEvent)
 		return storage.ErrDateBusy
 	}
 
 	s.eventMap[idEvent] = newEvent
-	s.logg.Debug("UpdateEvent: updated event ID=%s", idEvent)
+	s.logg.Debug("UpdateEvent: событие с ID: %s обновлено", idEvent)
 	return nil
 }
 
@@ -76,13 +76,13 @@ func (s *Storage) DeleteEvent(idEvent storage.IDEvent) error {
 
 	event, ok := s.eventMap[idEvent]
 	if !ok {
-		s.logg.Error("DeleteEvent: ID does not exist: %s", idEvent)
+		s.logg.Error("DeleteEvent: события ID: %s не существует", idEvent)
 		return storage.ErrIDEventNotExist
 	}
 
 	s.intervals.Remove(event.GetInterval())
 	delete(s.eventMap, idEvent)
-	s.logg.Debug("DeleteEvent: deleted event ID=%s", idEvent)
+	s.logg.Debug("DeleteEvent: удалено событие ID: %s", idEvent)
 	return nil
 }
 
@@ -102,17 +102,18 @@ func (s *Storage) getEventsWithLog(method string, start time.Time, duration time
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var res []storage.Event
+	res := []storage.Event{}
+
 	intervals := s.intervals.GetStartedInInterval(storage.Interval{Start: start, End: start.Add(duration)})
 	for _, inter := range intervals {
 		event, ok := s.eventMap[inter.IDEvent]
 		if !ok {
-			s.logg.Error("%s: missing event for ID: %s", method, inter.IDEvent)
+			s.logg.Error("%s: ошибка с событием ID: %s", method, inter.IDEvent)
 			return nil, storage.ErrGetEvents
 		}
 		res = append(res, event)
 	}
 
-	s.logg.Debug("%s: found %d events", method, len(res))
+	s.logg.Debug("%s: найдено %d событий", method, len(res))
 	return res, nil
 }
