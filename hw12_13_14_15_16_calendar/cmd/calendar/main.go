@@ -76,7 +76,7 @@ func main() {
 
 	if err := server.Stop(shutdownCtx); err != nil {
 		logg.Error("ошибка завершения сервера: " + err.Error())
-		os.Exit(1)
+		return
 	}
 
 	logg.Info("сервер остановлен корректно...")

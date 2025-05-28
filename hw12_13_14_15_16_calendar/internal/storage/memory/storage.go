@@ -53,7 +53,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) UpdateEvent(ctx context.Context, ID string, newEvent storage.Event) error {
+func (s *Storage) UpdateEvent(ctx context.Context, id string, newEvent storage.Event) error {
 	if err := newEvent.CheckValid(); err != nil {
 		s.logg.Error("UpdateEvent: некорректное новое событие: %v", err)
 		return err
@@ -67,23 +67,23 @@ func (s *Storage) UpdateEvent(ctx context.Context, ID string, newEvent storage.E
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	oldEvent, ok := s.eventMap[ID]
+	oldEvent, ok := s.eventMap[id]
 	if !ok {
-		s.logg.Error("UpdateEvent: событие с ID: %s уже существует", ID)
+		s.logg.Error("UpdateEvent: событие с ID: %s уже существует", id)
 		return storage.ErrIDNotExist
 	}
 
 	if !s.intervals.Replace(newEvent.GetInterval(), oldEvent.GetInterval()) {
-		s.logg.Error("UpdateEvent: новый временной интервал для ID: %s уже занят", ID)
+		s.logg.Error("UpdateEvent: новый временной интервал для ID: %s уже занят", id)
 		return storage.ErrDateBusy
 	}
 
-	s.eventMap[ID] = newEvent
-	s.logg.Debug("UpdateEvent: событие с ID: %s обновлено", ID)
+	s.eventMap[id] = newEvent
+	s.logg.Debug("UpdateEvent: событие с ID: %s обновлено", id)
 	return nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, ID string) error {
+func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		s.logg.Error("DeleteEvent: операция отменена контекстом")
 		return err
@@ -92,32 +92,41 @@ func (s *Storage) DeleteEvent(ctx context.Context, ID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	event, ok := s.eventMap[ID]
+	event, ok := s.eventMap[id]
 	if !ok {
-		s.logg.Error("DeleteEvent: события ID: %s не существует", ID)
+		s.logg.Error("DeleteEvent: события ID: %s не существует", id)
 		return storage.ErrIDNotExist
 	}
 
 	s.intervals.Remove(event.GetInterval())
-	delete(s.eventMap, ID)
-	s.logg.Debug("DeleteEvent: удалено событие ID: %s", ID)
+	delete(s.eventMap, id)
+	s.logg.Debug("DeleteEvent: удалено событие ID: %s", id)
 	return nil
 }
 
+type CtxKey string
+
+const MethodKey CtxKey = "method"
+
 func (s *Storage) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEventsWithLog(ctx, "GetEventsDay", start, time.Hour*24)
+	ctx = context.WithValue(ctx, MethodKey, "GetEventsDay")
+	return s.getEventsWithLog(ctx, start, time.Hour*24)
 }
 
 func (s *Storage) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEventsWithLog(ctx, "GetEventsWeek", start, time.Hour*24*7)
+	ctx = context.WithValue(ctx, MethodKey, "GetEventsWeek")
+	return s.getEventsWithLog(ctx, start, time.Hour*24*7)
 }
 
 func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEventsWithLog(ctx, "GetEventsMonth", start, time.Hour*24*30)
+	ctx = context.WithValue(ctx, MethodKey, "GetEventsMonth")
+	return s.getEventsWithLog(ctx, start, time.Hour*24*30)
 }
 
-func (s *Storage) getEventsWithLog(ctx context.Context, method string, start time.Time, duration time.Duration) ([]storage.Event, error) {
+func (s *Storage) getEventsWithLog(ctx context.Context, start time.Time, d time.Duration) ([]storage.Event, error) {
 	res := []storage.Event{}
+
+	method := ctx.Value(MethodKey)
 
 	if err := ctx.Err(); err != nil {
 		s.logg.Error("%s: операция отменена контекстом", method)
@@ -127,7 +136,7 @@ func (s *Storage) getEventsWithLog(ctx context.Context, method string, start tim
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	intervals := s.intervals.GetStartedInInterval(storage.Interval{Start: start, End: start.Add(duration)})
+	intervals := s.intervals.GetStartedInInterval(storage.Interval{Start: start, End: start.Add(d)})
 
 	for _, inter := range intervals {
 		event, ok := s.eventMap[inter.ID]

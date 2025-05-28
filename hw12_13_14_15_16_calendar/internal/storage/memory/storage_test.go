@@ -11,7 +11,7 @@ import (
 	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
 )
 
-// Вспомогательная функция для создания тестового события
+// Вспомогательная функция для создания тестового события.
 func createTestEvent(id string, title string, start time.Time, duration time.Duration) storage.Event {
 	return storage.Event{
 		ID:    id,
@@ -21,7 +21,7 @@ func createTestEvent(id string, title string, start time.Time, duration time.Dur
 	}
 }
 
-// Тест: добавление, обновление и удаление события
+// Тест: добавление, обновление и удаление события.
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
 	logg := logger.New("debug", os.Stdout)
@@ -30,39 +30,39 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 	start := time.Now().Add(time.Minute)
 	event := createTestEvent("1", "Тестовое событие", start, time.Hour)
 
-	// Добавление
+	// Добавление.
 	err := store.CreateEvent(ctx, event)
 	if err != nil {
 		t.Fatalf("не удалось добавить событие: %v", err)
 	}
 
-	// Повторное добавление того же ID — должно вернуть ошибку
+	// Повторное добавление того же ID — должно вернуть ошибку.
 	err = store.CreateEvent(ctx, event)
 	if !errors.Is(err, storage.ErrIDRepeated) {
 		t.Errorf("ожидалась ошибка ErrIDRepeated, получено: %v", err)
 	}
 
-	// Обновление
+	// Обновление.
 	newEvent := createTestEvent("1", "Обновлённое событие", start.Add(time.Hour*2), time.Hour)
 	err = store.UpdateEvent(ctx, event.ID, newEvent)
 	if err != nil {
 		t.Errorf("не удалось обновить событие: %v", err)
 	}
 
-	// Удаление
+	// Удаление.
 	err = store.DeleteEvent(ctx, event.ID)
 	if err != nil {
 		t.Errorf("не удалось удалить событие: %v", err)
 	}
 
-	// Повторное удаление — ожидается ошибка
+	// Повторное удаление — ожидается ошибка.
 	err = store.DeleteEvent(ctx, event.ID)
 	if !errors.Is(err, storage.ErrIDNotExist) {
 		t.Errorf("ожидалась ошибка ErrIDNotExist, получено: %v", err)
 	}
 }
 
-// Тест: получение событий за день и неделю
+// Тест: получение событий за день и неделю.
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
@@ -71,7 +71,7 @@ func TestStorage_GetEvents(t *testing.T) {
 
 	now := time.Now().Add(time.Minute)
 
-	// Добавим события в разные дни
+	// Добавим события в разные дни.
 	events := []storage.Event{
 		createTestEvent("1", "Сегодня", now, time.Hour),
 		createTestEvent("2", "Завтра", now.Add(25*time.Hour), time.Hour),
@@ -101,7 +101,7 @@ func TestStorage_GetEvents(t *testing.T) {
 	}
 }
 
-// Тест: потокобезопасность при параллельном доступе
+// Тест: потокобезопасность при параллельном доступе.
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
@@ -113,7 +113,7 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 	const goroutines = 100
 	errCh := make(chan error, goroutines*2)
 
-	// Параллельно добавляем события
+	// Параллельно добавляем события.
 	for i := 0; i < goroutines; i++ {
 		go func(i int) {
 			id := string(rune('A'+i%26)) + string(rune('0'+(i/26)))
@@ -123,12 +123,12 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 		}(i)
 	}
 
-	// Параллельно удаляем события
+	// Параллельно удаляем события.
 	for i := 0; i < goroutines; i++ {
 		go func(i int) {
 			id := string(rune('A'+i%26)) + string(rune('0'+(i/26)))
 			err := store.DeleteEvent(ctx, id)
-			// Ошибка может быть нормальной, если удаление происходит до добавления
+			// Ошибка может быть нормальной, если удаление происходит до добавления.
 			if err != nil && !errors.Is(err, storage.ErrIDNotExist) {
 				errCh <- err
 			} else {
@@ -137,7 +137,7 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 		}(i)
 	}
 
-	// Проверим ошибки
+	// Проверим ошибки.
 	for i := 0; i < goroutines*2; i++ {
 		if err := <-errCh; err != nil {
 			t.Errorf("обнаружена ошибка при параллельном доступе: %v", err)

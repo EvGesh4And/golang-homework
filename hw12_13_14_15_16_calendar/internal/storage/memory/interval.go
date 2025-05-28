@@ -6,7 +6,7 @@ type IntervalSlice struct {
 	Intervals []storage.Interval
 }
 
-// Проверяет, можно ли добавить интервал без пересечений
+// Проверяет, можно ли добавить интервал без пересечений.
 func (s *IntervalSlice) CanAdd(newInterval storage.Interval) bool {
 	for _, interval := range s.Intervals {
 		if intervalsOverlap(interval, newInterval) {
@@ -60,12 +60,12 @@ func (s *IntervalSlice) GetStartedInInterval(interval storage.Interval) []storag
 	return res
 }
 
-// Проверяет пересечение интервалов
+// Проверяет пересечение интервалов.
 func intervalsOverlap(a, b storage.Interval) bool {
 	return a.Start.Before(b.End) && b.Start.Before(a.End)
 }
 
-// Проверяет пересечение интервалов
+// Проверяет пересечение интервалов.
 func startInInterval(a, b storage.Interval) bool {
 	return (b.Start.Equal(a.Start) || b.Start.Before(a.Start)) && (a.Start.Before(b.End) || a.Start.Equal(b.End))
 }
