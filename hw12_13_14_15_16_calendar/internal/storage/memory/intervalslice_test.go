@@ -9,7 +9,7 @@ import (
 
 // Вспомогательная функция для создания интервала
 func makeInterval(start, end time.Time, id string) storage.Interval {
-	return storage.Interval{Start: start, End: end, IDEvent: storage.IDEvent(id)}
+	return storage.Interval{Start: start, End: end, ID: id}
 }
 
 // Тест: добавление, удаление и замена интервалов

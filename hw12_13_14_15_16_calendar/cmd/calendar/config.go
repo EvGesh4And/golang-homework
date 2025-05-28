@@ -8,6 +8,7 @@ import "github.com/BurntSushi/toml"
 type Config struct {
 	Logger  LoggerConf  `toml:"logger"`
 	Storage StorageConf `toml:"storage"`
+	HTTP    HTTPConf    `toml:"http"`
 }
 
 type LoggerConf struct {
@@ -16,6 +17,11 @@ type LoggerConf struct {
 
 type StorageConf struct {
 	mod string `toml:"mod"`
+}
+
+type HTTPConf struct {
+	Host string `toml:"host"`
+	Port int    `toml:"port"`
 }
 
 func NewConfig() Config {

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,7 +12,6 @@ import (
 	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/app"
 	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/logger"
 	internalhttp "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/server/http"
-	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage/memory"
 )
 
@@ -30,38 +30,55 @@ func main() {
 	}
 
 	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
 
-	var storage storage.Storage
+	var logg app.Logger
+	var storage app.Storage
+
+	logg = logger.New(config.Logger.Level, os.Stdout)
 
 	if config.Storage.mod == "memory" {
+		logg.Info("используется in-memory хранилище")
 		storage = memorystorage.New(logg)
 	}
 
 	calendar := app.New(logg, storage)
+	logg.Info("календарь создан")
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := internalhttp.NewServer(config.HTTP.Host, config.HTTP.Port, logg, calendar)
+	logg.Info("http сервер создан")
 
-	ctx, cancel := signal.NotifyContext(context.Background(),
-		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
+	errCh := make(chan error, 1)
+
+	// Запускаем сервер в фоне
 	go func() {
-		<-ctx.Done()
+		addr := fmt.Sprintf("%s:%d", config.HTTP.Host, config.HTTP.Port)
+		logg.Info("запускаем HTTP сервер " + addr + "...")
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
-
-		if err := server.Stop(ctx); err != nil {
-			logg.Error("failed to stop http server: " + err.Error())
+		if err := server.Start(); err != nil {
+			errCh <- err
 		}
 	}()
 
-	logg.Info("calendar is running...")
-
-	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
+	// Ожидаем сигнала завершения или ошибки от сервера
+	select {
+	case <-ctx.Done():
+		logg.Info("получен сигнал завершения, останавливаем сервер...")
+	case err := <-errCh:
+		logg.Error("сервер аварийно завершился: " + err.Error())
 	}
+
+	// Таймаут на graceful shutdown
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	if err := server.Stop(shutdownCtx); err != nil {
+		logg.Error("ошибка завершения сервера: " + err.Error())
+		os.Exit(1)
+	}
+
+	logg.Info("сервер остановлен корректно...")
+
 }

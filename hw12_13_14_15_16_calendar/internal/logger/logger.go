@@ -4,7 +4,8 @@ package logger
 
 import (
 	"fmt"
-	"time"
+	"io"
+	"log"
 )
 
 // Константы уровней.
@@ -24,40 +25,43 @@ var levelMap = map[string]int{
 
 type Logger struct {
 	level int
+	std   *log.Logger
 }
 
-func New(level string) *Logger {
+func New(level string, out io.Writer) *Logger {
 	lvl, ok := levelMap[level]
 	if !ok {
-		// Дефолтный уровень
 		lvl = LevelInfo
 	}
-	return &Logger{level: lvl}
+	return &Logger{
+		level: lvl,
+		std:   log.New(out, "", log.LstdFlags|log.Lmicroseconds),
+	}
 }
 
-func (l Logger) logPrint(level int, levelName string, msg string) {
+func (l *Logger) logPrint(level int, levelName string, msg string) {
 	if level > l.level {
 		return
 	}
-	fmt.Printf("[%s] %s %s\n", levelName, time.Now().Format("2006-01-02 15:04:05.000"), msg)
+	l.std.Printf("[%s] %s\n", levelName, msg)
 }
 
-func (l Logger) Error(form string, args ...any) {
+func (l *Logger) Error(form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelError, "ERROR", msg)
 }
 
-func (l Logger) Warn(form string, args ...any) {
+func (l *Logger) Warn(form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelWarn, "WARN", msg)
 }
 
-func (l Logger) Info(form string, args ...any) {
+func (l *Logger) Info(form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelInfo, "INFO", msg)
 }
 
-func (l Logger) Debug(form string, args ...any) {
+func (l *Logger) Debug(form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
 	l.logPrint(LevelDebug, "DEBUG", msg)
 }

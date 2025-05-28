@@ -4,10 +4,8 @@ import (
 	"time"
 )
 
-type IDEvent string
-
 type Event struct {
-	IDEvent
+	ID          string
 	Title       string
 	Start       time.Time
 	End         time.Time
@@ -17,7 +15,7 @@ type Event struct {
 }
 
 type Interval struct {
-	IDEvent
+	ID    string
 	Start time.Time
 	End   time.Time
 }
@@ -36,5 +34,5 @@ func (e Event) CheckValid() error {
 }
 
 func (e Event) GetInterval() Interval {
-	return Interval{e.IDEvent, e.Start, e.End}
+	return Interval{e.ID, e.Start, e.End}
 }

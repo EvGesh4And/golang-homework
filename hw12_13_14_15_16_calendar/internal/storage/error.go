@@ -8,8 +8,8 @@ var (
 	ErrEventValidEnd    = errors.New("ошибка в длительности события")
 	ErrEventValidBefore = errors.New("ошибка в времени заблаговременного уведомления")
 	// ошибка с ID
-	ErrIDEventRepeated = errors.New("событие с таким ID уже есть в хранилище")
-	ErrIDEventNotExist = errors.New("события с таким ID не существует")
+	ErrIDRepeated = errors.New("событие с таким ID уже есть в хранилище")
+	ErrIDNotExist = errors.New("события с таким ID не существует")
 	// ошибка с временными интервалами
 	ErrDateBusy = errors.New("данное время уже занято другим событием")
 	// ошибка с получем событий в интервале

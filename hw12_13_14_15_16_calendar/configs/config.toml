@@ -4,3 +4,7 @@ mod = "console"
 
 [storage]
 mod = "memory"
+
+[http]
+host = "localhost"
+port = 8080
