@@ -84,7 +84,6 @@ func (s *Storage) UpdateEvent(ctx context.Context, ID string, newEvent storage.E
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, ID string) error {
-
 	if err := ctx.Err(); err != nil {
 		s.logg.Error("DeleteEvent: операция отменена контекстом")
 		return err
@@ -118,7 +117,6 @@ func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storag
 }
 
 func (s *Storage) getEventsWithLog(ctx context.Context, method string, start time.Time, duration time.Duration) ([]storage.Event, error) {
-
 	res := []storage.Event{}
 
 	if err := ctx.Err(); err != nil {

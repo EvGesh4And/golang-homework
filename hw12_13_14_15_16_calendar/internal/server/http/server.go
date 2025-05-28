@@ -33,14 +33,14 @@ type Application interface { // TODO
 }
 
 func NewServer(host string, port int, logger Logger, app Application) *Server {
-
 	handler := &MyHandler{}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", handler.Hello)
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", host, port),
-		Handler: mux,
+		Addr:              fmt.Sprintf("%s:%d", host, port),
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return &Server{
@@ -75,5 +75,12 @@ func (s *Server) Stop(ctx context.Context) error {
 type MyHandler struct{}
 
 func (h *MyHandler) Hello(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello, world!"))
+	name := r.URL.Query().Get("name") // ?name=Иван
+
+	if name == "" {
+		name = "world"
+	}
+
+	msg := fmt.Sprintf("Hello, %s!", name)
+	w.Write([]byte(msg))
 }

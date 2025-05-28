@@ -26,7 +26,6 @@ func captureOutput(f func(w io.Writer)) string {
 }
 
 func TestLogger_Info(t *testing.T) {
-
 	output := captureOutput(func(w io.Writer) {
 		log := New("debug", w)
 		log.Debug("проверка валидности события с ID: %d", 10)
