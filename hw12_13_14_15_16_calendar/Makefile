@@ -22,8 +22,29 @@ run-img: build-img
 version: build
 	$(BIN) version
 
-test:
-	go test -race ./internal/... ./pkg/...
+# Запуск PostgreSQL в Docker для тестов
+test-db-run:
+	docker run -d --rm --name calendar-test-db \
+		-e POSTGRES_USER=otus_user \
+		-e POSTGRES_PASSWORD=otus_password \
+		-e POSTGRES_DB=otus \
+		-p 54321:5432 \
+		postgres:15
+
+# Ожидание пока БД будет готова (не самый быстрый способ, но простой)
+wait-db:
+	@echo "Waiting for PostgreSQL to be ready..."
+	@until pg_isready -h localhost -p 54321 -U otus_user > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+
+# Остановка контейнера с БД (если нужно)
+test-db-stop:
+	docker stop calendar-test-db || true
+
+test: test-db-run wait-db
+	TEST_DSN="host=localhost port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable options='-c search_path=calendar'" go test -race ./internal/...
+	$(MAKE) test-db-stop
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
@@ -31,4 +52,4 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint
+.PHONY: build run build-img run-img version test lint test-db-run wait-db test-db-stop

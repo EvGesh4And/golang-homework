@@ -1,6 +1,6 @@
 package memorystorage
 
-import "github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
+import "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 
 type IntervalSlice struct {
 	Intervals []storage.Interval
@@ -49,11 +49,11 @@ func (s *IntervalSlice) Replace(newInterval, oldInterval storage.Interval) bool 
 	return false
 }
 
-func (s *IntervalSlice) GetStartedInInterval(interval storage.Interval) []storage.Interval {
+func (s *IntervalSlice) GetInInterval(interval storage.Interval) []storage.Interval {
 	var res []storage.Interval
 
 	for _, inter := range s.Intervals {
-		if startInInterval(inter, interval) {
+		if interInInterval(inter, interval) {
 			res = append(res, inter)
 		}
 	}
@@ -66,6 +66,6 @@ func intervalsOverlap(a, b storage.Interval) bool {
 }
 
 // Проверяет пересечение интервалов.
-func startInInterval(a, b storage.Interval) bool {
-	return (b.Start.Equal(a.Start) || b.Start.Before(a.Start)) && (a.Start.Before(b.End) || a.Start.Equal(b.End))
+func interInInterval(a, b storage.Interval) bool {
+	return (a.Start.Equal(b.End) || a.Start.Before(b.End)) && (b.Start.Before(a.End) || b.Start.Equal(a.End))
 }

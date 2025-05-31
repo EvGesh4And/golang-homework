@@ -28,7 +28,7 @@ func captureOutput(f func(w io.Writer)) string {
 func TestLogger_Info(t *testing.T) {
 	output := captureOutput(func(w io.Writer) {
 		log := New("debug", w)
-		log.Debug("проверка валидности события с ID: %d", 10)
+		log.Debug("test", "проверка валидности события с ID: %d", 10)
 	})
 
 	require.Contains(t, output, "DEBUG", "должен содержать уровень DEBUG")
@@ -36,8 +36,8 @@ func TestLogger_Info(t *testing.T) {
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("info", w)
-		log.Info("добавлено событие с ID: %d", 10)
-		log.Warn("потеряно соединение, попытка его восстановить")
+		log.Info("test", "добавлено событие с ID: %d", 10)
+		log.Warn("test", "потеряно соединение, попытка его восстановить")
 	})
 
 	slice := strings.Split(output, "\n")
@@ -52,8 +52,8 @@ func TestLogger_Info(t *testing.T) {
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("warn", w)
-		log.Info("добавлено событие с ID: %d", 10)
-		log.Warn("потеряно соединение, попытка его восстановить")
+		log.Info("test", "добавлено событие с ID: %d", 10)
+		log.Warn("test", "потеряно соединение, попытка его восстановить")
 	})
 
 	slice = strings.Split(output, "\n")
@@ -65,10 +65,10 @@ func TestLogger_Info(t *testing.T) {
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("error", w)
-		log.Info("добавлено событие с ID: %d", 10)
-		log.Error("связь с БД полностью потеряно")
-		log.Warn("потеряно соединение, попытка его восстановить")
-		log.Debug("проверка валидности события с ID: %d", 10)
+		log.Info("test", "добавлено событие с ID: %d", 10)
+		log.Error("test", "связь с БД полностью потеряно")
+		log.Warn("test", "потеряно соединение, попытка его восстановить")
+		log.Debug("test", "проверка валидности события с ID: %d", 10)
 	})
 
 	slice = strings.Split(output, "\n")

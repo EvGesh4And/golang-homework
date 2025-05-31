@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 )
 
 // Константы уровней.
@@ -35,33 +36,39 @@ func New(level string, out io.Writer) *Logger {
 	}
 	return &Logger{
 		level: lvl,
-		std:   log.New(out, "", log.LstdFlags|log.Lmicroseconds),
+		std:   log.New(out, "", 0),
 	}
 }
 
-func (l *Logger) logPrint(level int, levelName string, msg string) {
+func (l *Logger) logPrint(level int, levelName string, module string, msg string) {
 	if level > l.level {
 		return
 	}
-	l.std.Printf("[%s] %s\n", levelName, msg)
+	// Дата и время.
+	ts := time.Now().Format("02/Jan/2006:15:04:05 -0700")
+	l.std.Printf("%-16s [%s] %s: %s\n", levelName, ts, module, msg)
 }
 
-func (l *Logger) Error(form string, args ...any) {
+func (l *Logger) Error(module string, form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelError, "ERROR", msg)
+	l.logPrint(LevelError, "ERROR", module, msg)
 }
 
-func (l *Logger) Warn(form string, args ...any) {
+func (l *Logger) Warn(module string, form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelWarn, "WARN", msg)
+	l.logPrint(LevelWarn, "WARN", module, msg)
 }
 
-func (l *Logger) Info(form string, args ...any) {
+func (l *Logger) Info(module string, form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelInfo, "INFO", msg)
+	l.logPrint(LevelInfo, "INFO", module, msg)
 }
 
-func (l *Logger) Debug(form string, args ...any) {
+func (l *Logger) Debug(module string, form string, args ...any) {
 	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelDebug, "DEBUG", msg)
+	l.logPrint(LevelDebug, "DEBUG", module, msg)
+}
+
+func (l *Logger) Printf(form string, args ...any) {
+	l.std.Printf(form, args...)
 }

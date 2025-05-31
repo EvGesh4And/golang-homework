@@ -3,12 +3,10 @@ package memorystorage
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/logger"
-	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 )
 
 // Вспомогательная функция для создания тестового события.
@@ -24,8 +22,8 @@ func createTestEvent(id string, title string, start time.Time, duration time.Dur
 // Тест: добавление, обновление и удаление события.
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
-	logg := logger.New("debug", os.Stdout)
-	store := New(logg)
+
+	store := New()
 
 	start := time.Now().Add(time.Minute)
 	event := createTestEvent("1", "Тестовое событие", start, time.Hour)
@@ -66,8 +64,7 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
-	logg := logger.New("debug", os.Stdout)
-	store := New(logg)
+	store := New()
 
 	now := time.Now().Add(time.Minute)
 
@@ -105,8 +102,7 @@ func TestStorage_GetEvents(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
-	logg := logger.New("debug", os.Stdout)
-	store := New(logg)
+	store := New()
 
 	start := time.Now().Add(time.Minute)
 

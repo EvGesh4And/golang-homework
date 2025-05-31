@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/EvGesh4And/hw12_13_14_15_calendar/internal/storage"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 )
 
 // Вспомогательная функция для создания интервала.

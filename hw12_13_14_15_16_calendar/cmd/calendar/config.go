@@ -16,7 +16,9 @@ type LoggerConf struct {
 }
 
 type StorageConf struct {
-	mod string `toml:"mod"`
+	Mod       string `toml:"mod"`
+	DSN       string `toml:"dsn"`
+	Migration string `toml:"migration"`
 }
 
 type HTTPConf struct {
