@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
-	// регистрируем драйвер PostgreSQL для database/sql через pgx.
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/stdlib" //revive:disable:blank-imports
 	"github.com/pressly/goose/v3"
 )
 
