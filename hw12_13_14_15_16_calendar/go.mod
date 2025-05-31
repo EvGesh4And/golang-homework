@@ -1,6 +1,6 @@
 module github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
 
-go 1.24.0
+go 1.23.0
 
 toolchain go1.24.3
 
