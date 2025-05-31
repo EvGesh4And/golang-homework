@@ -43,7 +43,7 @@ test-db-stop:
 	docker stop calendar-test-db || true
 
 test: test-db-run wait-db
-	TEST_DSN="host=localhost port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable options='-c search_path=calendar'" go test -race ./internal/...
+	TEST_DSN="host=localhost port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable" go test -race ./internal/...
 	$(MAKE) test-db-stop
 
 install-lint-deps:
