@@ -11,11 +11,16 @@ linters-settings:
   depguard:
     rules:
       Main:
+        list-mode: strict
         files:
           - $all
           - "!$test"
         allow:
           - $gostd
+          - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
+          - github.com/jackc/pgx/stdlib
+          - github.com/pressly/goose/v3
+          - github.com/BurntSushi/toml
           - github.com/cheggaaa/pb/v3
           - github.com/spf13/pflag
       Test:
@@ -23,7 +28,9 @@ linters-settings:
           - $test
         allow:
           - $gostd
+          - github.com/google/uuid
           - github.com/stretchr/testify
+          - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
 issues:
   exclude-rules:
     - path: _test\.go
