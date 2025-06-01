@@ -4,6 +4,8 @@ import "errors"
 
 var (
 	// Ошибка в полях события.
+	ErrEventValidID     = errors.New("ошибка в ID события")
+	ErrEventValidUserID = errors.New("ошибка в ID пользователя события")
 	ErrEventValidStart  = errors.New("ошибка в дате и времени начала события")
 	ErrEventValidEnd    = errors.New("ошибка в длительности события")
 	ErrEventValidBefore = errors.New("ошибка в времени заблаговременного уведомления")

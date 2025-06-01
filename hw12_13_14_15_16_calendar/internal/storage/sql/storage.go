@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/stdlib" //revive:disable:blank-imports
 	"github.com/pressly/goose/v3"
 )
@@ -58,10 +59,6 @@ func (s *Storage) Migrate(migrate string) (err error) {
 }
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	if err := event.CheckValid(); err != nil {
-		return err
-	}
-
 	query := `
         INSERT INTO events (id, title, description, user_id, start_time, end_time, time_before)
         VALUES ($1, $2, $3, $4, $5, $6, make_interval(secs => $7))
@@ -83,11 +80,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) UpdateEvent(ctx context.Context, id string, newEvent storage.Event) error {
-	if err := newEvent.CheckValid(); err != nil {
-		return err
-	}
-
+func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	query := `
         UPDATE events
         SET title = $1, description = $2, user_id = $3, start_time = $4,
@@ -111,7 +104,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id string, newEvent storage.E
 	return nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
+func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	query := `
         DELETE FROM events
         WHERE id = $1

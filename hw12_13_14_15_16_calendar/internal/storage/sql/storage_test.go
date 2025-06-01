@@ -37,10 +37,10 @@ func setupStorage(t *testing.T) *Storage {
 
 func makeTestEvent() storage.Event {
 	return storage.Event{
-		ID:          uuid.New().String(),
+		ID:          uuid.New(),
 		Title:       "Test Event",
 		Description: "Test Description",
-		UserID:      uuid.New().String(),
+		UserID:      uuid.New(),
 		Start:       time.Now().Add(time.Hour),
 		End:         time.Now().Add(3 * time.Hour),
 		TimeBefore:  15 * time.Minute,

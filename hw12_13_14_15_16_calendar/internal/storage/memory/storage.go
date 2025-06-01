@@ -6,27 +6,24 @@ import (
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	"github.com/google/uuid"
 )
 
 type Storage struct {
 	mu        sync.RWMutex
-	eventMap  map[string]storage.Event
+	eventMap  map[uuid.UUID]storage.Event
 	intervals IntervalSlice
 }
 
 func New() *Storage {
 	return &Storage{
 		mu:        sync.RWMutex{},
-		eventMap:  make(map[string]storage.Event),
+		eventMap:  make(map[uuid.UUID]storage.Event),
 		intervals: IntervalSlice{Intervals: []storage.Interval{}},
 	}
 }
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	if err := event.CheckValid(); err != nil {
-		return err
-	}
-
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -45,11 +42,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) UpdateEvent(ctx context.Context, id string, newEvent storage.Event) error {
-	if err := newEvent.CheckValid(); err != nil {
-		return err
-	}
-
+func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -70,7 +63,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id string, newEvent storage.E
 	return nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
+func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
