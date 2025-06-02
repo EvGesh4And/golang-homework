@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"log/slog"
 	"net"
 	"time"
 
@@ -23,15 +24,17 @@ type Application interface {
 }
 
 type CalendarServer struct {
+	logger *slog.Logger
 	pb.UnimplementedCalendarServer
 	App Application
 	lis net.Listener
 }
 
-func NewServerGRPC(lis net.Listener, app Application) *CalendarServer {
+func NewServerGRPC(logger *slog.Logger, lis net.Listener, app Application) *CalendarServer {
 	return &CalendarServer{
-		lis: lis,
-		App: app,
+		logger: logger,
+		lis:    lis,
+		App:    app,
 	}
 }
 

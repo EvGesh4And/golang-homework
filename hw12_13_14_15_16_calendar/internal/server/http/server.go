@@ -6,23 +6,17 @@ import (
 	"net/http"
 	"time"
 
+	"log/slog"
+
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
 )
 
 type Server struct { // TODO
-	logger     Logger
+	logger     *slog.Logger
 	app        Application
 	httpServer *http.Server
 	ErrCh      chan error
-}
-
-type Logger interface {
-	Error(module string, msg string, args ...any)
-	Warn(module string, msg string, args ...any)
-	Info(module string, msg string, args ...any)
-	Debug(module string, msg string, args ...any)
-	Printf(msg string, args ...any)
 }
 
 type Application interface {
@@ -34,7 +28,7 @@ type Application interface {
 	GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error)
 }
 
-func NewServerHTTP(host string, port int, logger Logger, app Application) *Server {
+func NewServerHTTP(host string, port int, logger *slog.Logger, app Application) *Server {
 	s := &Server{
 		logger: logger,
 		app:    app,

@@ -2,6 +2,7 @@ package memorystorage
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
@@ -13,13 +14,15 @@ type Storage struct {
 	mu        sync.RWMutex
 	eventMap  map[uuid.UUID]storage.Event
 	intervals IntervalSlice
+	logger    *slog.Logger
 }
 
-func New() *Storage {
+func New(logger *slog.Logger) *Storage {
 	return &Storage{
 		mu:        sync.RWMutex{},
 		eventMap:  make(map[uuid.UUID]storage.Event),
 		intervals: IntervalSlice{Intervals: []storage.Interval{}},
+		logger:    logger,
 	}
 }
 

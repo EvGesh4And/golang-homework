@@ -3,72 +3,33 @@
 package logger
 
 import (
-	"fmt"
 	"io"
 	"log"
-	"time"
+	"log/slog"
+	"os"
 )
 
-// Константы уровней.
-const (
-	LevelError = iota
-	LevelWarn
-	LevelInfo
-	LevelDebug
-)
-
-var levelMap = map[string]int{
-	"error": LevelError,
-	"warn":  LevelWarn,
-	"info":  LevelInfo,
-	"debug": LevelDebug,
+var levelMap = map[string]slog.Level{
+	"error": slog.LevelError,
+	"warn":  slog.LevelWarn,
+	"info":  slog.LevelInfo,
+	"debug": slog.LevelDebug,
 }
 
-type Logger struct {
-	level int
-	std   *log.Logger
-}
-
-func New(level string, out io.Writer) *Logger {
-	lvl, ok := levelMap[level]
-	if !ok {
-		lvl = LevelInfo
+func New(level string, out io.Writer) *slog.Logger {
+	if lvl, ok := levelMap[level]; ok {
+		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: lvl,
+		})
+		logger := slog.New(handler)
+		log.Print("уровень логгирования: ", level)
+		return logger
+	} else {
+		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})
+		logger := slog.New(handler)
+		log.Print("уровень логгирования: debug (по умолчанию)")
+		return logger
 	}
-	return &Logger{
-		level: lvl,
-		std:   log.New(out, "", 0),
-	}
-}
-
-func (l *Logger) logPrint(level int, levelName string, module string, msg string) {
-	if level > l.level {
-		return
-	}
-	// Дата и время.
-	ts := time.Now().Format("02/Jan/2006:15:04:05 -0700")
-	l.std.Printf("%-16s [%s] %s: %s\n", levelName, ts, module, msg)
-}
-
-func (l *Logger) Error(module string, form string, args ...any) {
-	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelError, "ERROR", module, msg)
-}
-
-func (l *Logger) Warn(module string, form string, args ...any) {
-	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelWarn, "WARN", module, msg)
-}
-
-func (l *Logger) Info(module string, form string, args ...any) {
-	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelInfo, "INFO", module, msg)
-}
-
-func (l *Logger) Debug(module string, form string, args ...any) {
-	msg := fmt.Sprintf(form, args...)
-	l.logPrint(LevelDebug, "DEBUG", module, msg)
-}
-
-func (l *Logger) Printf(form string, args ...any) {
-	l.std.Printf(form, args...)
 }

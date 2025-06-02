@@ -2,6 +2,7 @@ package sqlstorage
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -15,7 +16,7 @@ var testDSN = os.Getenv("TEST_DSN")
 func setupStorage(t *testing.T) *Storage {
 	t.Helper()
 
-	st := New(testDSN)
+	st := New(&slog.Logger{}, testDSN)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

@@ -3,6 +3,7 @@ package memorystorage
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func createTestEvent(id uuid.UUID, title string, start time.Time, duration time.
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	store := New(&slog.Logger{})
 
 	start := time.Now().Add(time.Minute)
 	event := createTestEvent(uuid.New(), "Тестовое событие", start, time.Hour)
@@ -65,7 +66,7 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	store := New(&slog.Logger{})
 
 	now := time.Now().Add(time.Minute)
 
@@ -103,7 +104,7 @@ func TestStorage_GetEvents(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	store := New(&slog.Logger{})
 
 	start := time.Now().Add(time.Minute)
 

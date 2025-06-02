@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
@@ -14,13 +15,15 @@ import (
 )
 
 type Storage struct {
-	dsn string
-	db  *sql.DB
+	dsn    string
+	db     *sql.DB
+	logger *slog.Logger
 }
 
-func New(dsn string) *Storage {
+func New(logger *slog.Logger, dsn string) *Storage {
 	return &Storage{
-		dsn: dsn,
+		dsn:    dsn,
+		logger: logger,
 	}
 }
 

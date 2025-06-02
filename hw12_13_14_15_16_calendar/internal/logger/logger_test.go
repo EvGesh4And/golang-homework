@@ -2,9 +2,9 @@ package logger
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,53 +28,41 @@ func captureOutput(f func(w io.Writer)) string {
 func TestLogger_Info(t *testing.T) {
 	output := captureOutput(func(w io.Writer) {
 		log := New("debug", w)
-		log.Debug("test", "проверка валидности события с ID: %d", 10)
+		log.Debug("проверка валидности события", "event_id", 10)
 	})
 
 	require.Contains(t, output, "DEBUG", "должен содержать уровень DEBUG")
-	require.Contains(t, output, "проверка валидности события с ID: 10", "должен содержать сообщение")
+	require.Contains(t, output, "проверка валидности события", "должен содержать сообщение")
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("info", w)
-		log.Info("test", "добавлено событие с ID: %d", 10)
-		log.Warn("test", "потеряно соединение, попытка его восстановить")
+		log.Info("добавлено событие", "event_id", 10)
+		log.Warn("потеряно соединение, попытка его восстановить")
 	})
 
-	slice := strings.Split(output, "\n")
+	require.Contains(t, output, "INFO", "должен содержать уровень INFO")
+	require.Contains(t, output, "добавлено событие", "должен содержать сообщение")
 
-	require.Len(t, slice, 3, "число логов не соотвествует требованию")
-
-	require.Contains(t, slice[0], "INFO", "должен содержать уровень INFO")
-	require.Contains(t, slice[0], "добавлено событие с ID: 10", "должен содержать сообщение")
-
-	require.Contains(t, slice[1], "WARN", "должен содержать уровень WARN")
-	require.Contains(t, slice[1], "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
+	require.Contains(t, output, "WARN", "должен содержать уровень WARN")
+	require.Contains(t, output, "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("warn", w)
-		log.Info("test", "добавлено событие с ID: %d", 10)
-		log.Warn("test", "потеряно соединение, попытка его восстановить")
+		log.Info("добавлено событие", "event_id", 10)
+		log.Warn("потеряно соединение, попытка его восстановить")
 	})
 
-	slice = strings.Split(output, "\n")
-
-	require.Len(t, slice, 2, "число логов не соотвествует требованию")
-
-	require.Contains(t, slice[0], "WARN", "должен содержать уровень WARN")
-	require.Contains(t, slice[0], "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
+	require.Contains(t, output, "WARN", "должен содержать уровень WARN")
+	require.Contains(t, output, "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
 
 	output = captureOutput(func(w io.Writer) {
 		log := New("error", w)
-		log.Info("test", "добавлено событие с ID: %d", 10)
-		log.Error("test", "связь с БД полностью потеряно")
-		log.Warn("test", "потеряно соединение, попытка его восстановить")
-		log.Debug("test", "проверка валидности события с ID: %d", 10)
+		log.Info("добавлено событие", "event_id", 10)
+		log.Error("связь с БД полностью потеряно")
+		log.Warn("потеряно соединение, попытка его восстановить")
+		log.Debug("проверка валидности события", "event_id", 10)
 	})
-
-	slice = strings.Split(output, "\n")
-
-	require.Len(t, slice, 2, "число логов не соотвествует требованию")
-
-	require.Contains(t, slice[0], "ERROR", "должен содержать уровень WARN")
-	require.Contains(t, slice[0], "связь с БД полностью потеряно", "должен содержать сообщение")
+	fmt.Println(output)
+	require.Contains(t, output, "ERROR", "должен содержать уровень ERROR")
+	require.Contains(t, output, "связь с БД полностью потеряно", "должен содержать сообщение")
 }

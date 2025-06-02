@@ -138,7 +138,7 @@ func (s *Server) writeError(w http.ResponseWriter, code int, message string, err
 			s.logger.Error("HTTP", message, err)
 		}
 	} else {
-		s.logger.Warn("HTTP", message)
+		s.logger.Warn("HTTP", message, nil)
 	}
 	http.Error(w, message, code)
 }

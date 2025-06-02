@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -41,19 +42,29 @@ func main() {
 
 	config := NewConfig()
 
-	var appLogger app.Logger
-	var storage app.Storage
+	// Глобальный логгер.
+	var globalLogger *slog.Logger
+	globalLogger = logger.New(config.Logger.Level, os.Stdout)
+	// Дочерние логгеры
+	var (
+		logApp        = globalLogger.With("component", "app")
+		logStorageMem = globalLogger.With("component", "storage", "type", "inmemory")
+		logStorageSQL = globalLogger.With("component", "storage", "type", "sql")
+		logHTTP       = globalLogger.With("component", "http")
+		logGRPC       = globalLogger.With("component", "grpc")
+	)
 
-	appLogger = logger.New(config.Logger.Level, os.Stdout)
+	// Хранилище.
+	var storage app.Storage
 
 	switch config.Storage.Mod {
 	case "memory":
-		storage = memorystorage.New()
+		storage = memorystorage.New(logStorageMem)
 		log.Print("используется in-memory хранилище")
 	case "sql":
 		log.Print("инициализация подключения к PostgreSQL...")
 
-		sqlStorage := sqlstorage.New(config.Storage.DSN)
+		sqlStorage := sqlstorage.New(logStorageSQL, config.Storage.DSN)
 		// Таймаут на установление соединения
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -84,10 +95,10 @@ func main() {
 		return
 	}
 
-	calendar := app.New(appLogger, storage)
+	calendar := app.New(logApp, storage)
 	log.Print("сервис calendar создан")
 
-	serverHTTP := internalhttp.NewServerHTTP(config.HTTP.Host, config.HTTP.Port, appLogger, calendar)
+	serverHTTP := internalhttp.NewServerHTTP(config.HTTP.Host, config.HTTP.Port, logHTTP, calendar)
 	log.Print("http сервер создан")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -136,7 +147,7 @@ func main() {
 		return
 	}
 
-	serverGRPC := grpcserver.NewServerGRPC(lis, calendar)
+	serverGRPC := grpcserver.NewServerGRPC(logGRPC, lis, calendar)
 
 	grpcSrv := grpc.NewServer()
 	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
