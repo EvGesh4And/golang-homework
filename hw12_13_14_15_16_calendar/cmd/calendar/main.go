@@ -5,16 +5,21 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/gRPC/pb"
+	grpcserver "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/gRPC/server"
 	internalhttp "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/http"
 	memorystorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/memory"
 	sqlstorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/sql"
+	"google.golang.org/grpc"
 )
 
 var configFile string
@@ -82,39 +87,102 @@ func main() {
 	calendar := app.New(appLogger, storage)
 	log.Print("сервис calendar создан")
 
-	server := internalhttp.NewServer(config.HTTP.Host, config.HTTP.Port, appLogger, calendar)
+	serverHTTP := internalhttp.NewServerHTTP(config.HTTP.Host, config.HTTP.Port, appLogger, calendar)
 	log.Print("http сервер создан")
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	errCh := make(chan error, 1)
+	// Канал ошибок от HTTP сервера
+	errChHTTP := make(chan error, 1)
+
+	wg := sync.WaitGroup{}
 
 	// Запускаем сервер в фоне
 	go func() {
 		addr := fmt.Sprintf("%s:%d", config.HTTP.Host, config.HTTP.Port)
 		log.Print("HTTP сервер запускается " + addr + "...")
 
-		if err := server.Start(); err != nil {
-			errCh <- err
+		if err := serverHTTP.Start(); err != nil {
+			errChHTTP <- err
 		}
 	}()
 
-	// Ожидаем сигнала завершения или ошибки от сервера
-	select {
-	case <-ctx.Done():
-		log.Print("получен сигнал завершения, останавливаем сервер...")
-	case err := <-errCh:
-		log.Printf("сервер аварийно остановился: %s", err)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		// Ожидаем сигнала завершения или ошибки от сервера
+		select {
+		case <-ctx.Done():
+			log.Print("получен сигнал завершения, останавливаем сервер...")
+		case err := <-errChHTTP:
+			log.Printf("сервер аварийно остановился: %s", err)
+		}
+
+		// Таймаут на graceful shutdown
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		if err := serverHTTP.Stop(shutdownCtx); err != nil {
+			log.Printf("[shutdown] ошибка завершения сервера HTTP: %s", err)
+		} else {
+			log.Print("[shutdown] HTTP сервер завершился корректно...")
+		}
+	}()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port))
+	if err != nil {
+		log.Printf("gRPC не удалось слушать порт %v: %v", fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), err)
+		return
 	}
 
-	// Таймаут на graceful shutdown
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	serverGRPC := grpcserver.NewServerGRPC(lis, calendar)
 
-	if err := server.Stop(shutdownCtx); err != nil {
-		log.Printf("[shutdown] ошибка завершения сервера: %s", err)
-	} else {
-		log.Print("[shutdown] сервер завершился корректно...")
-	}
+	grpcSrv := grpc.NewServer()
+	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
+
+	// Канал ошибок от gRPC сервера
+	errChGRPC := make(chan error, 1)
+
+	// Запуск сервера в отдельной горутине
+	go func() {
+		log.Print("gRPC сервер запускается " + lis.Addr().String() + "...")
+		if err := grpcSrv.Serve(lis); err != nil {
+			errChGRPC <- err
+		}
+	}()
+
+	wg.Add(1)
+	// Обработка завершения
+	go func() {
+		defer wg.Done()
+
+		select {
+		case <-ctx.Done():
+			log.Print("получен сигнал завершения, останавливаем gRPC сервер...")
+		case err := <-errChGRPC:
+			log.Printf("gRPC сервер аварийно остановился: %s", err)
+			return
+		}
+
+		// Таймаут на graceful shutdown
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+
+		done := make(chan struct{})
+		go func() {
+			grpcSrv.GracefulStop() // корректное завершение
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			log.Print("[shutdown] gRPC сервер завершился корректно...")
+		case <-shutdownCtx.Done():
+			log.Print("[shutdown] таймаут graceful shutdown gRPC, вызываем Stop()")
+			grpcSrv.Stop() // экстренная остановка
+		}
+	}()
+
+	wg.Wait()
 }

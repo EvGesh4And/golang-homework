@@ -34,7 +34,7 @@ type Application interface {
 	GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error)
 }
 
-func NewServer(host string, port int, logger Logger, app Application) *Server {
+func NewServerHTTP(host string, port int, logger Logger, app Application) *Server {
 	s := &Server{
 		logger: logger,
 		app:    app,
