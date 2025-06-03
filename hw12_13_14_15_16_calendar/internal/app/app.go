@@ -40,12 +40,13 @@ func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
 	if err != nil {
 		return fmt.Errorf("app.CreateEvent: %w", err)
 	}
-	a.logger.InfoContext(ctx, "успешно создано событие", "method", "CreateEvent", "eventID", event.ID.String())
+	a.logger.Info("успешно создано событие", "method", "CreateEvent", "eventID", event.ID.String())
 	return nil
 }
 
 func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error {
-	a.logger.Debug("попытка обновить событие", "method", "UpdateEvent", "eventID", id.String(), "userID", event.UserID.String(), "event", event)
+	a.logger.Debug("попытка обновить событие", "method", "UpdateEvent", "eventID", id.String(),
+		"userID", event.UserID.String(), "event", event)
 	if err := event.CheckValid(); err != nil {
 		return fmt.Errorf("app.UpdateEvent: некорректное тело события: %w", err)
 	}
@@ -76,7 +77,7 @@ func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Even
 	if err != nil {
 		return nil, fmt.Errorf("app.GetEventsDay: %w", err)
 	}
-	a.logger.Debug("успешно получены события", "method", "GetEventsDay", "count", len(events))
+	a.logger.Info("успешно получены события", "method", "GetEventsDay", "count", len(events))
 	return events, nil
 }
 
@@ -86,7 +87,7 @@ func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Eve
 	if err != nil {
 		return nil, fmt.Errorf("app.GetEventsWeek: %w", err)
 	}
-	a.logger.Debug("успешно получены события", "method", "GetEventsWeek", "count", len(events))
+	a.logger.Info("успешно получены события", "method", "GetEventsWeek", "count", len(events))
 	return events, nil
 }
 
@@ -96,6 +97,6 @@ func (a *App) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Ev
 	if err != nil {
 		return nil, fmt.Errorf("app.GetEventsMonth: %w", err)
 	}
-	a.logger.Debug("успешно получены события", "method", "GetEventsMonth", "count", len(events))
+	a.logger.Info("успешно получены события", "method", "GetEventsMonth", "count", len(events))
 	return events, nil
 }

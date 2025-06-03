@@ -119,10 +119,6 @@ func (s *Server) handleDeleteEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
-	if !s.checkContentType(w, r) {
-		return
-	}
-
 	startStr := r.URL.Query().Get("start")
 	start, err := time.Parse(time.RFC3339, startStr)
 	if err != nil {
@@ -148,12 +144,14 @@ func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		s.logger.Error("ошибка при получении событий", "method", "handleGetEvents", "start", start.Format(time.RFC3339), "period", period, "error", err)
+		s.logger.Error("ошибка при получении событий", "method", "handleGetEvents",
+			"start", start.Format(time.RFC3339), "period", period, "error", err)
 		http.Error(w, ErrEventRetrieval.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Info("успешно получены события", "method", "handleGetEvents", "count", len(events), "period", period, "start", start.Format(time.RFC3339))
+	s.logger.Info("успешно получены события", "method", "handleGetEvents", "count",
+		len(events), "period", period, "start", start.Format(time.RFC3339))
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(events)
 }

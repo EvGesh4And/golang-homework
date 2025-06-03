@@ -98,23 +98,33 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *Storage) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEvents(ctx, start, time.Hour*24)
+	return s.getEvents(ctx, start, "Day")
 }
 
 func (s *Storage) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEvents(ctx, start, time.Hour*24*7)
+	return s.getEvents(ctx, start, "Week")
 }
 
 func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	return s.getEvents(ctx, start, time.Hour*24*30)
+	return s.getEvents(ctx, start, "Month")
 }
 
-func (s *Storage) getEvents(ctx context.Context, start time.Time, d time.Duration) ([]storage.Event, error) {
+func (s *Storage) getEvents(ctx context.Context, start time.Time, period string) ([]storage.Event, error) {
+
+	var d time.Duration
+	switch period {
+	case "Day":
+		d = time.Hour * 24
+	case "Week":
+		d = time.Hour * 24 * 7
+	case "Month":
+		d = time.Hour * 24 * 30
+	}
+
 	s.logger.Debug(
 		"попытка получить события за интервал",
-		"method", "getEvents",
+		"method", fmt.Sprintf("GetEvents%s", period),
 		"start", start.Format(time.RFC3339),
-		"duration", d.String(),
 	)
 
 	if err := ctx.Err(); err != nil {
@@ -138,10 +148,9 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, d time.Duratio
 
 	s.logger.Info(
 		"успешно получены события",
-		"method", "getEvents",
+		"method", fmt.Sprintf("GetEvents%s", period),
 		"count", len(res),
 		"start", start.Format(time.RFC3339),
-		"end", queryInterval.End.Format(time.RFC3339),
 	)
 	return res, nil
 }
