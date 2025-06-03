@@ -51,7 +51,6 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app Application) 
 }
 
 func (s *Server) Start() error {
-	// Запускаем ListenAndServe в текущем потоке — main его обернёт в go func
 	err := s.httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("ошибка в работе сервера: %w", err)

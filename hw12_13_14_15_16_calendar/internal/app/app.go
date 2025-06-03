@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -31,69 +32,70 @@ func New(logger *slog.Logger, storage Storage) *App {
 }
 
 func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
+	a.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String(), "event", event)
 	if err := event.CheckValid(); err != nil {
-		a.logger.Error("CreateEvent некорректное тело события ID %s: %v", event.ID.String(), err)
-		return err
+		return fmt.Errorf("app.CreateEvent: некорректное тело события: %w", err)
 	}
 	err := a.storage.CreateEvent(ctx, event)
 	if err != nil {
-		a.logger.Error("CreateEvent ID %s: storage: %v", event.ID.String(), err)
-		return err
+		return fmt.Errorf("app.CreateEvent: %w", err)
 	}
-	a.logger.Info("CreateEvent успешно создано событие ID %s", event.ID.String(), nil)
+	a.logger.InfoContext(ctx, "успешно создано событие", "method", "CreateEvent", "eventID", event.ID.String())
 	return nil
 }
 
 func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error {
+	a.logger.Debug("попытка обновить событие", "method", "UpdateEvent", "eventID", id.String(), "userID", event.UserID.String(), "event", event)
 	if err := event.CheckValid(); err != nil {
-		a.logger.Error("APP", "UpdateEvent некорректное тело события ID %s: %v", event.ID.String(), err)
-		return err
+		return fmt.Errorf("app.UpdateEvent: некорректное тело события: %w", err)
 	}
 	err := a.storage.UpdateEvent(ctx, id, event)
 	if err != nil {
-		a.logger.Error("APP", "UpdateEvent ID %s: storage: %v", id.String(), err)
-		return err
+		return fmt.Errorf("app.UpdateEvent: %w", err)
 	}
-	a.logger.Info("APP", "UpdateEvent успешно обновлено событие ID %s", id.String())
+	a.logger.Info("успешно обновлено событие", "method", "UpdateEvent", "eventID", event.ID.String())
 	return nil
 }
 
 func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
+	a.logger.Debug("попытка удалить событие", "method", "DeleteEvent", "eventID", id.String())
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("storage:memory.CreateEvent: %w", err)
+	}
 	err := a.storage.DeleteEvent(ctx, id)
 	if err != nil {
-		a.logger.Error("APP", "DeleteEvent событие ID %s: %v", id.String(), err)
-		return err
+		return fmt.Errorf("app.DeleteEvent: %w", err)
 	}
-	a.logger.Info("APP", "DeleteEvent успешно удалено событие ID %s", id.String())
+	a.logger.Info("успешно удалено событие", "method", "DeleteEvent", "eventID", id.String())
 	return nil
 }
 
 func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
+	a.logger.Debug("попытка получить события за день", "method", "GetEventsDay", "start", start.Format(time.RFC3339))
 	events, err := a.storage.GetEventsDay(ctx, start)
 	if err != nil {
-		a.logger.Error("APP", "GetEventsDay: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("app.GetEventsDay: %w", err)
 	}
-	a.logger.Debug("APP", "GetEventsDay: найдено %d событий", len(events))
+	a.logger.Debug("успешно получены события", "method", "GetEventsDay", "count", len(events))
 	return events, nil
 }
 
 func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
+	a.logger.Debug("попытка получить события за неделю", "method", "GetEventsWeek", "start", start.Format(time.RFC3339))
 	events, err := a.storage.GetEventsWeek(ctx, start)
 	if err != nil {
-		a.logger.Error("APP", "GetEventsWeek: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("app.GetEventsWeek: %w", err)
 	}
-	a.logger.Debug("APP", "GetEventsWeek: найдено %d событий", len(events))
+	a.logger.Debug("успешно получены события", "method", "GetEventsWeek", "count", len(events))
 	return events, nil
 }
 
 func (a *App) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
+	a.logger.Debug("попытка получить события за месяц", "method", "GetEventsMonth", "start", start.Format(time.RFC3339))
 	events, err := a.storage.GetEventsMonth(ctx, start)
 	if err != nil {
-		a.logger.Error("APP", "GetEventsMonth: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("app.GetEventsMonth: %w", err)
 	}
-	a.logger.Debug("APP", "GetEventsMonth: найдено %d событий", len(events))
+	a.logger.Debug("успешно получены события", "method", "GetEventsMonth", "count", len(events))
 	return events, nil
 }

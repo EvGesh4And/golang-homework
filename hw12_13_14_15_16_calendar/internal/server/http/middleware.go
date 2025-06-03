@@ -36,9 +36,6 @@ func loggingMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 			// Обработка запроса.
 			next.ServeHTTP(recorder, r)
 
-			// Дата и время.
-			timestamp := time.Now().Format("02/Jan/2006:15:04:05 -0700")
-
 			// Метод, путь и версия.
 			method := r.Method
 			path := r.URL.RequestURI()
@@ -58,8 +55,8 @@ func loggingMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
 				userAgent = `"` + userAgent + `"`
 			}
 
-			logger.Info(fmt.Sprintf("%-16s [%s] %s %s %s %d %d %s",
-				ip, timestamp, method, path, proto, status, latency, userAgent))
+			logger.Info(fmt.Sprintf("%s %s %s %s %d %d %s",
+				ip, method, path, proto, status, latency, userAgent))
 		})
 	}
 }
