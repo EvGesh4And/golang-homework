@@ -62,8 +62,8 @@ func (s *Storage) Migrate(migrate string) (err error) {
 }
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-
-	s.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String(), "event", event)
+	s.logger.Debug("попытка создать событие", "method", "CreateEvent",
+		"eventID", event.ID.String(), "userID", event.UserID.String(), "event", event)
 
 	query := `
         INSERT INTO events (id, title, description, user_id, start_time, end_time, time_before)
@@ -82,12 +82,14 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	if err != nil {
 		return fmt.Errorf("storage:sql.CreateEvent: %w", err)
 	}
-	s.logger.Info("успешно создано событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String())
+	s.logger.Info("успешно создано событие", "method", "CreateEvent",
+		"eventID", event.ID.String(), "userID", event.UserID.String())
 	return nil
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	s.logger.Debug("попытка обновить событие", "method", "UpdateEvent", "eventID", id.String(), "newUserID", newEvent.UserID.String(), "newEvent", newEvent)
+	s.logger.Debug("попытка обновить событие", "method", "UpdateEvent",
+		"eventID", id.String(), "newUserID", newEvent.UserID.String(), "newEvent", newEvent)
 
 	query := `
         UPDATE events
@@ -108,12 +110,14 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	if err != nil {
 		return fmt.Errorf("storage:sql.UpdateEvent: %w", err)
 	}
-	s.logger.Info("успешно обновлено событие", "method", "UpdateEvent", "eventID", id.String(), "userID", newEvent.UserID.String())
+	s.logger.Info("успешно обновлено событие", "method", "UpdateEvent",
+		"eventID", id.String(), "userID", newEvent.UserID.String())
 	return nil
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	s.logger.Debug("попытка удалить событие", "method", "DeleteEvent", "eventID", id.String())
+	s.logger.Debug("попытка удалить событие", "method", "DeleteEvent",
+		"eventID", id.String())
 
 	query := `
         DELETE FROM events
@@ -124,7 +128,8 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return fmt.Errorf("storage:sql.DeleteEvent: %w", err)
 	}
-	s.logger.Info("успешно удалено событие", "method", "DeleteEvent", "eventID", id.String())
+	s.logger.Info("успешно удалено событие", "method", "DeleteEvent",
+		"eventID", id.String())
 	return nil
 }
 
@@ -141,7 +146,6 @@ func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storag
 }
 
 func (s *Storage) getEvents(ctx context.Context, start time.Time, period string) ([]storage.Event, error) {
-
 	var d time.Duration
 	switch period {
 	case "Day":

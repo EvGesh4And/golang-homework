@@ -32,7 +32,8 @@ func New(logger *slog.Logger, storage Storage) *App {
 }
 
 func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
-	a.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String(), "event", event)
+	a.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID", event.ID.String(),
+		"userID", event.UserID.String(), "event", event)
 	if err := event.CheckValid(); err != nil {
 		return fmt.Errorf("app.CreateEvent: некорректное тело события: %w", err)
 	}

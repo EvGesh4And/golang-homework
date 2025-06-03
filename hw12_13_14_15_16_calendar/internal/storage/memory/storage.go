@@ -28,8 +28,8 @@ func New(logger *slog.Logger) *Storage {
 }
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-
-	s.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String(), "event", event)
+	s.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID",
+		event.ID.String(), "userID", event.UserID.String(), "event", event)
 
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("storage:memory.CreateEvent: %w", err)
@@ -46,12 +46,14 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	}
 
 	s.eventMap[event.ID] = event
-	s.logger.Info("успешно создано событие", "method", "CreateEvent", "eventID", event.ID.String(), "userID", event.UserID.String())
+	s.logger.Info("успешно создано событие", "method", "CreateEvent",
+		"eventID", event.ID.String(), "userID", event.UserID.String())
 	return nil
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	s.logger.Debug("попытка обновить событие", "method", "UpdateEvent", "eventID", id.String(), "newUserID", newEvent.UserID.String(), "newEvent", newEvent)
+	s.logger.Debug("попытка обновить событие", "method", "UpdateEvent",
+		"eventID", id.String(), "newUserID", newEvent.UserID.String(), "newEvent", newEvent)
 
 	if err := ctx.Err(); err != nil {
 		return fmt.Errorf("storage:memory.UpdateEvent: %w", err)
@@ -62,7 +64,8 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 	oldEvent, ok := s.eventMap[id]
 	if !ok {
-		s.logger.Info("событие для обновления не найдено", "method", "UpdateEvent", "eventID", id.String())
+		s.logger.Info("событие для обновления не найдено",
+			"method", "UpdateEvent", "eventID", id.String())
 		return fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrIDNotExist)
 	}
 
@@ -71,7 +74,8 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	}
 
 	s.eventMap[id] = newEvent
-	s.logger.Info("успешно обновлено событие", "method", "UpdateEvent", "eventID", id.String(), "userID", newEvent.UserID.String())
+	s.logger.Info("успешно обновлено событие", "method", "UpdateEvent",
+		"eventID", id.String(), "userID", newEvent.UserID.String())
 	return nil
 }
 
@@ -93,7 +97,8 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	s.intervals.Remove(event.GetInterval())
 	delete(s.eventMap, id)
 
-	s.logger.Info("успешно удалено событие", "method", "DeleteEvent", "eventID", id.String(), "userID", event.UserID.String())
+	s.logger.Info("успешно удалено событие", "method", "DeleteEvent",
+		"eventID", id.String(), "userID", event.UserID.String())
 	return nil
 }
 
@@ -110,7 +115,6 @@ func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storag
 }
 
 func (s *Storage) getEvents(ctx context.Context, start time.Time, period string) ([]storage.Event, error) {
-
 	var d time.Duration
 	switch period {
 	case "Day":

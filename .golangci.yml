@@ -24,6 +24,10 @@ linters-settings:
           - github.com/BurntSushi/toml
           - github.com/cheggaaa/pb/v3
           - github.com/spf13/pflag
+          - google.golang.org/protobuf/types/known/emptypb
+          - google.golang.org/protobuf/types/known/timestamppb
+          - google.golang.org/grpc
+          - github.com/lmittmann/tint
       Test:
         files:
           - $test

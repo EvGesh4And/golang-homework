@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -20,7 +19,6 @@ var levelMap = map[string]slog.Level{
 }
 
 func New(level string, out io.Writer) *slog.Logger {
-
 	var levLog slog.Level
 
 	if lvl, ok := levelMap[level]; ok {
@@ -31,7 +29,7 @@ func New(level string, out io.Writer) *slog.Logger {
 		log.Print("уровень логгирования: debug (по умолчанию)")
 	}
 
-	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{
+	logger := slog.New(tint.NewHandler(out, &tint.Options{
 		Level:      levLog,
 		TimeFormat: time.Kitchen,
 	}))

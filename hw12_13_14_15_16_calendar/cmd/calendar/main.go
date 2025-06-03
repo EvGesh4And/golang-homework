@@ -84,7 +84,7 @@ func main() {
 
 		log.Print("выполнение миграций...")
 		if err := sqlStorage.Migrate(config.Storage.Migration); err != nil {
-			log.Print(err)
+			log.Printf("ошибка миграции: %v", err)
 			return
 		}
 

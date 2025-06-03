@@ -57,15 +57,18 @@ func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.logger.Debug("попытка создать событие", "method", "handleCreateEvent", "eventID", event.ID, "userID", event.UserID)
+	s.logger.Debug("попытка создать событие", "method", "handleCreateEvent",
+		"eventID", event.ID, "userID", event.UserID)
 
 	if err := s.app.CreateEvent(r.Context(), event); err != nil {
-		s.logger.Error("ошибка при создании события", "method", "handleCreateEvent", "eventID", event.ID, "userID", event.UserID, "error", err)
+		s.logger.Error("ошибка при создании события", "method", "handleCreateEvent",
+			"eventID", event.ID, "userID", event.UserID, "error", err)
 		http.Error(w, ErrCreateEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Info("событие успешно создано", "method", "handleCreateEvent", "eventID", event.ID, "userID", event.UserID)
+	s.logger.Info("событие успешно создано", "method", "handleCreateEvent",
+		"eventID", event.ID, "userID", event.UserID)
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "created", "eventID": event.ID.String()})
 }
@@ -87,17 +90,23 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	event.ID = uuID
-	s.logger.Debug("попытка обновления события", "method", "handleUpdateEvent", "eventID", event.ID, "userID", event.UserID)
+	s.logger.Debug("попытка обновления события", "method", "handleUpdateEvent",
+		"eventID", event.ID, "userID", event.UserID)
 
 	if err := s.app.UpdateEvent(r.Context(), uuID, event); err != nil {
-		s.logger.Error("ошибка при обновлении события", "method", "handleUpdateEvent", "eventID", event.ID, "userID", event.UserID, "error", err)
+		s.logger.Error("ошибка при обновлении события", "method", "handleUpdateEvent",
+			"eventID", event.ID, "userID", event.UserID, "error", err)
 		http.Error(w, ErrUpdateEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Info("событие успешно обновлено", "method", "handleUpdateEvent", "eventID", event.ID, "userID", event.UserID)
+	s.logger.Info("событие успешно обновлено", "method", "handleUpdateEvent",
+		"eventID", event.ID, "userID", event.UserID)
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "updated", "eventID": event.ID.String()})
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"status":  "updated",
+		"eventID": event.ID.String(),
+	})
 }
 
 func (s *Server) handleDeleteEvent(w http.ResponseWriter, r *http.Request) {
@@ -109,12 +118,14 @@ func (s *Server) handleDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	s.logger.Debug("попытка удалить событие", "method", "handleDeleteEvent", "eventID", uuID)
 
 	if err := s.app.DeleteEvent(r.Context(), uuID); err != nil {
-		s.logger.Error("ошибка при удалении события", "method", "handleDeleteEvent", "eventID", uuID.String(), "error", err)
+		s.logger.Error("ошибка при удалении события", "method", "handleDeleteEvent",
+			"eventID", uuID.String(), "error", err)
 		http.Error(w, ErrDeleteEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	s.logger.Info("событие успешно удалено", "method", "handleDeleteEvent", "eventID", uuID.String())
+	s.logger.Info("событие успешно удалено", "method", "handleDeleteEvent",
+		"eventID", uuID.String())
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -122,7 +133,8 @@ func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
 	startStr := r.URL.Query().Get("start")
 	start, err := time.Parse(time.RFC3339, startStr)
 	if err != nil {
-		s.logger.Error("неверный формат времени начала", "method", "handleGetEvents", "error", err)
+		s.logger.Error("неверный формат времени начала", "method", "handleGetEvents",
+			"error", err)
 		http.Error(w, ErrInvalidStartPeriod.Error(), http.StatusBadRequest)
 		return
 	}
@@ -162,7 +174,8 @@ func (s *Server) getEventFromBody(r *http.Request) (storage.Event, error) {
 		s.logger.Error("не удалось распарсить тело запроса в event", "error", err)
 		return storage.Event{}, err
 	}
-	s.logger.Debug("успешно распарсено тело запроса в event", "eventID", event.ID, "userID", event.UserID)
+	s.logger.Debug("успешно распарсено тело запроса в event",
+		"eventID", event.ID, "userID", event.UserID)
 	return event, nil
 }
 
