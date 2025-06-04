@@ -33,6 +33,9 @@ linters-settings:
           - $test
         allow:
           - $gostd
+          - google.golang.org/grpc
+          - google.golang.org/grpc/credentials/insecure
+          - google.golang.org/protobuf/types/known/timestamppb
           - github.com/google/uuid
           - github.com/stretchr/testify
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
