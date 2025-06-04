@@ -75,7 +75,11 @@ jobs:
       - name: make lint
         run: make lint
         working-directory: hw12_13_14_15_16_calendar
-      
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
       - name: make generate
         run: make generate
         working-directory: hw12_13_14_15_16_calendar
