@@ -4,6 +4,9 @@ DOCKER_IMG="calendar:develop"
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
+generate:
+	go generate ./...
+
 build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
@@ -53,4 +56,4 @@ lint: install-lint-deps
 	go mod download
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint test-db-run wait-db test-db-stop
+.PHONY: generate build run build-img run-img version test lint test-db-run wait-db test-db-stop

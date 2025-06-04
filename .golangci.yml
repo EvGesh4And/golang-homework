@@ -18,16 +18,24 @@ linters-settings:
         allow:
           - $gostd
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
+          - github.com/google/uuid
           - github.com/jackc/pgx/stdlib
           - github.com/pressly/goose/v3
           - github.com/BurntSushi/toml
           - github.com/cheggaaa/pb/v3
           - github.com/spf13/pflag
+          - google.golang.org/protobuf/types/known/emptypb
+          - google.golang.org/protobuf/types/known/timestamppb
+          - google.golang.org/grpc
+          - github.com/lmittmann/tint
       Test:
         files:
           - $test
         allow:
           - $gostd
+          - google.golang.org/grpc
+          - google.golang.org/grpc/credentials/insecure
+          - google.golang.org/protobuf/types/known/timestamppb
           - github.com/google/uuid
           - github.com/stretchr/testify
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar

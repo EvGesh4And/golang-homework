@@ -5,19 +5,20 @@ import (
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	"github.com/google/uuid"
 )
 
 // Вспомогательная функция для создания интервала.
-func makeInterval(start, end time.Time, id string) storage.Interval {
+func makeInterval(start, end time.Time, id uuid.UUID) storage.Interval {
 	return storage.Interval{Start: start, End: end, ID: id}
 }
 
 // Тест: добавление, удаление и замена интервалов.
 func TestIntervalSlice_AddRemoveReplace(t *testing.T) {
 	now := time.Now()
-	a := makeInterval(now, now.Add(time.Hour), "1")
-	b := makeInterval(now.Add(time.Minute*30), now.Add(time.Hour*2), "2")
-	c := makeInterval(now.Add(time.Hour*2), now.Add(time.Hour*3), "3")
+	a := makeInterval(now, now.Add(time.Hour), uuid.New())
+	b := makeInterval(now.Add(time.Minute*30), now.Add(time.Hour*2), uuid.New())
+	c := makeInterval(now.Add(time.Hour*2), now.Add(time.Hour*3), uuid.New())
 
 	slice := IntervalSlice{}
 
@@ -50,9 +51,9 @@ func TestIntervalSlice_AddRemoveReplace(t *testing.T) {
 // Тест: замена интервалов.
 func TestIntervalSlice_Replace(t *testing.T) {
 	now := time.Now()
-	a := makeInterval(now, now.Add(time.Hour), "1")
-	b := makeInterval(now.Add(time.Hour*2), now.Add(time.Hour*3), "2")              // свободный интервал.
-	conflict := makeInterval(now.Add(time.Minute*30), now.Add(time.Hour*1+30), "3") // пересекается с a.
+	a := makeInterval(now, now.Add(time.Hour), uuid.New())
+	b := makeInterval(now.Add(time.Hour*2), now.Add(time.Hour*3), uuid.New())              // свободный интервал.
+	conflict := makeInterval(now.Add(time.Minute*30), now.Add(time.Hour*1+30), uuid.New()) // пересекается с a.
 
 	slice := IntervalSlice{}
 	if !slice.AddIfFree(a) {

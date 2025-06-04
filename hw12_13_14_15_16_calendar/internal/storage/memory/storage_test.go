@@ -3,14 +3,17 @@ package memorystorage
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	"github.com/google/uuid"
 )
 
 // Вспомогательная функция для создания тестового события.
-func createTestEvent(id string, title string, start time.Time, duration time.Duration) storage.Event {
+func createTestEvent(id uuid.UUID, title string, start time.Time, duration time.Duration) storage.Event {
 	return storage.Event{
 		ID:    id,
 		Title: title,
@@ -23,10 +26,11 @@ func createTestEvent(id string, title string, start time.Time, duration time.Dur
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	start := time.Now().Add(time.Minute)
-	event := createTestEvent("1", "Тестовое событие", start, time.Hour)
+	event := createTestEvent(uuid.New(), "Тестовое событие", start, time.Hour)
 
 	// Добавление.
 	err := store.CreateEvent(ctx, event)
@@ -41,7 +45,7 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 	}
 
 	// Обновление.
-	newEvent := createTestEvent("1", "Обновлённое событие", start.Add(time.Hour*2), time.Hour)
+	newEvent := createTestEvent(uuid.New(), "Обновлённое событие", start.Add(time.Hour*2), time.Hour)
 	err = store.UpdateEvent(ctx, event.ID, newEvent)
 	if err != nil {
 		t.Errorf("не удалось обновить событие: %v", err)
@@ -64,15 +68,16 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	now := time.Now().Add(time.Minute)
 
 	// Добавим события в разные дни.
 	events := []storage.Event{
-		createTestEvent("1", "Сегодня", now, time.Hour),
-		createTestEvent("2", "Завтра", now.Add(25*time.Hour), time.Hour),
-		createTestEvent("3", "Через неделю", now.Add(6*24*time.Hour), time.Hour),
+		createTestEvent(uuid.New(), "Сегодня", now, time.Hour),
+		createTestEvent(uuid.New(), "Завтра", now.Add(25*time.Hour), time.Hour),
+		createTestEvent(uuid.New(), "Через неделю", now.Add(6*24*time.Hour), time.Hour),
 	}
 
 	for _, e := range events {
@@ -102,7 +107,8 @@ func TestStorage_GetEvents(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
-	store := New()
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	start := time.Now().Add(time.Minute)
 
@@ -112,7 +118,7 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 	// Параллельно добавляем события.
 	for i := 0; i < goroutines; i++ {
 		go func(i int) {
-			id := string(rune('A'+i%26)) + string(rune('0'+(i/26)))
+			id := uuid.New()
 			event := createTestEvent(id, "Событие", start.Add(time.Duration(i)*time.Minute), time.Second)
 			err := store.CreateEvent(ctx, event)
 			errCh <- err
@@ -121,8 +127,8 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 
 	// Параллельно удаляем события.
 	for i := 0; i < goroutines; i++ {
-		go func(i int) {
-			id := string(rune('A'+i%26)) + string(rune('0'+(i/26)))
+		go func() {
+			id := uuid.New()
 			err := store.DeleteEvent(ctx, id)
 			// Ошибка может быть нормальной, если удаление происходит до добавления.
 			if err != nil && !errors.Is(err, storage.ErrIDNotExist) {
@@ -130,7 +136,7 @@ func TestStorage_ConcurrentAccess(t *testing.T) {
 			} else {
 				errCh <- nil
 			}
-		}(i)
+		}()
 	}
 
 	// Проверим ошибки.
