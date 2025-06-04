@@ -89,7 +89,7 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Info("событие успешно обновлено", "method", "handleUpdateEvent",
 		"eventID", event.ID, "userID", event.UserID)
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status":  "updated",
 		"eventID": event.ID.String(),

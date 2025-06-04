@@ -2,11 +2,11 @@ package sqlstorage
 
 import (
 	"context"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
 )
@@ -16,7 +16,8 @@ var testDSN = os.Getenv("TEST_DSN")
 func setupStorage(t *testing.T) *Storage {
 	t.Helper()
 
-	st := New(&slog.Logger{}, testDSN)
+	logger := logger.New("info", os.Stdout)
+	st := New(logger, testDSN)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

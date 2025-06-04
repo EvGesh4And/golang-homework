@@ -3,10 +3,11 @@ package memorystorage
 import (
 	"context"
 	"errors"
-	"log/slog"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
 )
@@ -25,7 +26,8 @@ func createTestEvent(id uuid.UUID, title string, start time.Time, duration time.
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
 
-	store := New(&slog.Logger{})
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	start := time.Now().Add(time.Minute)
 	event := createTestEvent(uuid.New(), "Тестовое событие", start, time.Hour)
@@ -66,7 +68,8 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
-	store := New(&slog.Logger{})
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	now := time.Now().Add(time.Minute)
 
@@ -104,7 +107,8 @@ func TestStorage_GetEvents(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
-	store := New(&slog.Logger{})
+	logger := logger.New("info", os.Stdout)
+	store := New(logger)
 
 	start := time.Now().Add(time.Minute)
 

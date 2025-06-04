@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/api"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc/pb"
-	grpcserver "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc/server"
+	grpcserver "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc"
 	internalhttp "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/http"
 	memorystorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/memory"
 	sqlstorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/sql"
@@ -42,14 +42,14 @@ func setupLogger(cfg Config) *ChildLoggers {
 	return childLoggers
 }
 
-func setupStorage(cfg Config, childLoggers *ChildLoggers) app.Storage {
+func setupStorage(cfg Config, childLoggers *ChildLoggers) (app.Storage, error) {
 	logStorageMem := childLoggers.storageMem
 	logStorageSQL := childLoggers.storageSQL
 
 	switch cfg.Storage.Mod {
 	case "memory":
 		log.Print("используется in-memory хранилище")
-		return memorystorage.New(logStorageMem)
+		return memorystorage.New(logStorageMem), nil
 
 	case "sql":
 		log.Print("инициализация подключения к PostgreSQL...")
@@ -60,7 +60,7 @@ func setupStorage(cfg Config, childLoggers *ChildLoggers) app.Storage {
 
 		if err := sqlStorage.Connect(ctx); err != nil {
 			log.Printf("ошибка подключения к PostgreSQL: %v", err)
-			os.Exit(1)
+			return nil, err
 		}
 
 		go func() {
@@ -76,20 +76,25 @@ func setupStorage(cfg Config, childLoggers *ChildLoggers) app.Storage {
 		log.Print("выполнение миграций...")
 		if err := sqlStorage.Migrate(cfg.Storage.Migration); err != nil {
 			log.Print(err)
-			os.Exit(1)
+			return nil, err
 		}
 
 		log.Print("SQL-хранилище успешно инициализировано и подключено")
-		return sqlStorage
+		return sqlStorage, nil
 
 	default:
 		log.Printf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
-		os.Exit(1)
-		return nil
+		return nil, fmt.Errorf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
 	}
 }
 
-func startHTTPServer(wg *sync.WaitGroup, ctx context.Context, cfg Config, logHTTP *slog.Logger, calendar *app.App) {
+func startHTTPServer(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	cfg Config,
+	logHTTP *slog.Logger,
+	calendar *app.App,
+) {
 	serverHTTP := internalhttp.NewServerHTTP(cfg.HTTP.Host, cfg.HTTP.Port, logHTTP, calendar)
 	log.Print("http сервер создан")
 
@@ -125,7 +130,13 @@ func startHTTPServer(wg *sync.WaitGroup, ctx context.Context, cfg Config, logHTT
 	}()
 }
 
-func startGRPCServer(wg *sync.WaitGroup, ctx context.Context, cfg Config, logGRPC *slog.Logger, calendar *app.App) {
+func startGRPCServer(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	cfg Config,
+	logGRPC *slog.Logger,
+	calendar *app.App,
+) {
 	addr := fmt.Sprintf("%s:%d", cfg.GRPC.Host, cfg.GRPC.Port)
 
 	lis, err := net.Listen("tcp", addr)

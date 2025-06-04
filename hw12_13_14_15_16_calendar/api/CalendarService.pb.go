@@ -2,18 +2,19 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.31.0
-// source: api/CalendarService.proto
+// source: CalendarService.proto
 
 package pb
 
 import (
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
+
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -32,7 +33,7 @@ type CreateEventReq struct {
 
 func (x *CreateEventReq) Reset() {
 	*x = CreateEventReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[0]
+	mi := &file_CalendarService_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +45,7 @@ func (x *CreateEventReq) String() string {
 func (*CreateEventReq) ProtoMessage() {}
 
 func (x *CreateEventReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[0]
+	mi := &file_CalendarService_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +58,7 @@ func (x *CreateEventReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateEventReq.ProtoReflect.Descriptor instead.
 func (*CreateEventReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{0}
+	return file_CalendarService_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CreateEventReq) GetEvent() *Event {
@@ -82,7 +83,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_api_CalendarService_proto_msgTypes[1]
+	mi := &file_CalendarService_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -94,7 +95,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[1]
+	mi := &file_CalendarService_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -107,7 +108,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{1}
+	return file_CalendarService_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Event) GetId() string {
@@ -169,7 +170,7 @@ type UpdateEventReq struct {
 
 func (x *UpdateEventReq) Reset() {
 	*x = UpdateEventReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[2]
+	mi := &file_CalendarService_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -181,7 +182,7 @@ func (x *UpdateEventReq) String() string {
 func (*UpdateEventReq) ProtoMessage() {}
 
 func (x *UpdateEventReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[2]
+	mi := &file_CalendarService_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -194,7 +195,7 @@ func (x *UpdateEventReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateEventReq.ProtoReflect.Descriptor instead.
 func (*UpdateEventReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{2}
+	return file_CalendarService_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UpdateEventReq) GetId() string {
@@ -220,7 +221,7 @@ type DeleteEventReq struct {
 
 func (x *DeleteEventReq) Reset() {
 	*x = DeleteEventReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[3]
+	mi := &file_CalendarService_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -232,7 +233,7 @@ func (x *DeleteEventReq) String() string {
 func (*DeleteEventReq) ProtoMessage() {}
 
 func (x *DeleteEventReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[3]
+	mi := &file_CalendarService_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -245,7 +246,7 @@ func (x *DeleteEventReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteEventReq.ProtoReflect.Descriptor instead.
 func (*DeleteEventReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{3}
+	return file_CalendarService_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DeleteEventReq) GetId() string {
@@ -264,7 +265,7 @@ type GetEventsDayReq struct {
 
 func (x *GetEventsDayReq) Reset() {
 	*x = GetEventsDayReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[4]
+	mi := &file_CalendarService_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -276,7 +277,7 @@ func (x *GetEventsDayReq) String() string {
 func (*GetEventsDayReq) ProtoMessage() {}
 
 func (x *GetEventsDayReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[4]
+	mi := &file_CalendarService_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -289,7 +290,7 @@ func (x *GetEventsDayReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsDayReq.ProtoReflect.Descriptor instead.
 func (*GetEventsDayReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{4}
+	return file_CalendarService_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetEventsDayReq) GetStart() *timestamppb.Timestamp {
@@ -308,7 +309,7 @@ type GetEventsDayResp struct {
 
 func (x *GetEventsDayResp) Reset() {
 	*x = GetEventsDayResp{}
-	mi := &file_api_CalendarService_proto_msgTypes[5]
+	mi := &file_CalendarService_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -320,7 +321,7 @@ func (x *GetEventsDayResp) String() string {
 func (*GetEventsDayResp) ProtoMessage() {}
 
 func (x *GetEventsDayResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[5]
+	mi := &file_CalendarService_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -333,7 +334,7 @@ func (x *GetEventsDayResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsDayResp.ProtoReflect.Descriptor instead.
 func (*GetEventsDayResp) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{5}
+	return file_CalendarService_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetEventsDayResp) GetEvents() []*Event {
@@ -352,7 +353,7 @@ type GetEventsWeekReq struct {
 
 func (x *GetEventsWeekReq) Reset() {
 	*x = GetEventsWeekReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[6]
+	mi := &file_CalendarService_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -364,7 +365,7 @@ func (x *GetEventsWeekReq) String() string {
 func (*GetEventsWeekReq) ProtoMessage() {}
 
 func (x *GetEventsWeekReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[6]
+	mi := &file_CalendarService_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -377,7 +378,7 @@ func (x *GetEventsWeekReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsWeekReq.ProtoReflect.Descriptor instead.
 func (*GetEventsWeekReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{6}
+	return file_CalendarService_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetEventsWeekReq) GetStart() *timestamppb.Timestamp {
@@ -396,7 +397,7 @@ type GetEventsWeekResp struct {
 
 func (x *GetEventsWeekResp) Reset() {
 	*x = GetEventsWeekResp{}
-	mi := &file_api_CalendarService_proto_msgTypes[7]
+	mi := &file_CalendarService_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -408,7 +409,7 @@ func (x *GetEventsWeekResp) String() string {
 func (*GetEventsWeekResp) ProtoMessage() {}
 
 func (x *GetEventsWeekResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[7]
+	mi := &file_CalendarService_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -421,7 +422,7 @@ func (x *GetEventsWeekResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsWeekResp.ProtoReflect.Descriptor instead.
 func (*GetEventsWeekResp) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{7}
+	return file_CalendarService_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetEventsWeekResp) GetEvents() []*Event {
@@ -440,7 +441,7 @@ type GetEventsMonthReq struct {
 
 func (x *GetEventsMonthReq) Reset() {
 	*x = GetEventsMonthReq{}
-	mi := &file_api_CalendarService_proto_msgTypes[8]
+	mi := &file_CalendarService_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -452,7 +453,7 @@ func (x *GetEventsMonthReq) String() string {
 func (*GetEventsMonthReq) ProtoMessage() {}
 
 func (x *GetEventsMonthReq) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[8]
+	mi := &file_CalendarService_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -465,7 +466,7 @@ func (x *GetEventsMonthReq) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsMonthReq.ProtoReflect.Descriptor instead.
 func (*GetEventsMonthReq) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{8}
+	return file_CalendarService_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetEventsMonthReq) GetStart() *timestamppb.Timestamp {
@@ -484,7 +485,7 @@ type GetEventsMonthResp struct {
 
 func (x *GetEventsMonthResp) Reset() {
 	*x = GetEventsMonthResp{}
-	mi := &file_api_CalendarService_proto_msgTypes[9]
+	mi := &file_CalendarService_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -496,7 +497,7 @@ func (x *GetEventsMonthResp) String() string {
 func (*GetEventsMonthResp) ProtoMessage() {}
 
 func (x *GetEventsMonthResp) ProtoReflect() protoreflect.Message {
-	mi := &file_api_CalendarService_proto_msgTypes[9]
+	mi := &file_CalendarService_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -509,7 +510,7 @@ func (x *GetEventsMonthResp) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetEventsMonthResp.ProtoReflect.Descriptor instead.
 func (*GetEventsMonthResp) Descriptor() ([]byte, []int) {
-	return file_api_CalendarService_proto_rawDescGZIP(), []int{9}
+	return file_CalendarService_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetEventsMonthResp) GetEvents() []*Event {
@@ -519,11 +520,11 @@ func (x *GetEventsMonthResp) GetEvents() []*Event {
 	return nil
 }
 
-var File_api_CalendarService_proto protoreflect.FileDescriptor
+var File_CalendarService_proto protoreflect.FileDescriptor
 
-const file_api_CalendarService_proto_rawDesc = "" +
+const file_CalendarService_proto_rawDesc = "" +
 	"\n" +
-	"\x19api/CalendarService.proto\x12\bcalendar\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"7\n" +
+	"\x15CalendarService.proto\x12\bcalendar\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"7\n" +
 	"\x0eCreateEventReq\x12%\n" +
 	"\x05event\x18\x01 \x01(\v2\x0f.calendar.EventR\x05event\"\xfb\x01\n" +
 	"\x05Event\x12\x0e\n" +
@@ -562,19 +563,19 @@ const file_api_CalendarService_proto_rawDesc = "" +
 	"\x0eGetEventsMonth\x12\x1b.calendar.GetEventsMonthReq\x1a\x1c.calendar.GetEventsMonthResp\"\x00B\aZ\x05./;pbb\x06proto3"
 
 var (
-	file_api_CalendarService_proto_rawDescOnce sync.Once
-	file_api_CalendarService_proto_rawDescData []byte
+	file_CalendarService_proto_rawDescOnce sync.Once
+	file_CalendarService_proto_rawDescData []byte
 )
 
-func file_api_CalendarService_proto_rawDescGZIP() []byte {
-	file_api_CalendarService_proto_rawDescOnce.Do(func() {
-		file_api_CalendarService_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_CalendarService_proto_rawDesc), len(file_api_CalendarService_proto_rawDesc)))
+func file_CalendarService_proto_rawDescGZIP() []byte {
+	file_CalendarService_proto_rawDescOnce.Do(func() {
+		file_CalendarService_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_CalendarService_proto_rawDesc), len(file_CalendarService_proto_rawDesc)))
 	})
-	return file_api_CalendarService_proto_rawDescData
+	return file_CalendarService_proto_rawDescData
 }
 
-var file_api_CalendarService_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
-var file_api_CalendarService_proto_goTypes = []any{
+var file_CalendarService_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_CalendarService_proto_goTypes = []any{
 	(*CreateEventReq)(nil),        // 0: calendar.CreateEventReq
 	(*Event)(nil),                 // 1: calendar.Event
 	(*UpdateEventReq)(nil),        // 2: calendar.UpdateEventReq
@@ -588,7 +589,7 @@ var file_api_CalendarService_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 	(*emptypb.Empty)(nil),         // 11: google.protobuf.Empty
 }
-var file_api_CalendarService_proto_depIdxs = []int32{
+var file_CalendarService_proto_depIdxs = []int32{
 	1,  // 0: calendar.CreateEventReq.event:type_name -> calendar.Event
 	10, // 1: calendar.Event.start_time:type_name -> google.protobuf.Timestamp
 	10, // 2: calendar.Event.end_time:type_name -> google.protobuf.Timestamp
@@ -618,26 +619,26 @@ var file_api_CalendarService_proto_depIdxs = []int32{
 	0,  // [0:10] is the sub-list for field type_name
 }
 
-func init() { file_api_CalendarService_proto_init() }
-func file_api_CalendarService_proto_init() {
-	if File_api_CalendarService_proto != nil {
+func init() { file_CalendarService_proto_init() }
+func file_CalendarService_proto_init() {
+	if File_CalendarService_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_CalendarService_proto_rawDesc), len(file_api_CalendarService_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_CalendarService_proto_rawDesc), len(file_CalendarService_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_CalendarService_proto_goTypes,
-		DependencyIndexes: file_api_CalendarService_proto_depIdxs,
-		MessageInfos:      file_api_CalendarService_proto_msgTypes,
+		GoTypes:           file_CalendarService_proto_goTypes,
+		DependencyIndexes: file_CalendarService_proto_depIdxs,
+		MessageInfos:      file_CalendarService_proto_msgTypes,
 	}.Build()
-	File_api_CalendarService_proto = out.File
-	file_api_CalendarService_proto_goTypes = nil
-	file_api_CalendarService_proto_depIdxs = nil
+	File_CalendarService_proto = out.File
+	file_CalendarService_proto_goTypes = nil
+	file_CalendarService_proto_depIdxs = nil
 }

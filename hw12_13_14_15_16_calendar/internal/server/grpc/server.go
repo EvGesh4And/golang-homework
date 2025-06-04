@@ -7,13 +7,12 @@ import (
 	"net"
 	"time"
 
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/api"
+	server "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
+	storage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc/pb"
 )
 
 type application interface {
@@ -140,7 +139,7 @@ func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq
 }
 
 func (s *CalendarServer) GetEventsDay(ctx context.Context, req *pb.GetEventsDayReq) (*pb.GetEventsDayResp, error) {
-	start, err := GetStartTime(s.logger, req)
+	start, err := GetStartTime(req)
 	if err != nil {
 		s.logger.Error("ошибка при получении времени начала", "method", "GetEventsDay",
 			"error", err)
@@ -162,7 +161,7 @@ func (s *CalendarServer) GetEventsDay(ctx context.Context, req *pb.GetEventsDayR
 }
 
 func (s *CalendarServer) GetEventsWeek(ctx context.Context, req *pb.GetEventsWeekReq) (*pb.GetEventsWeekResp, error) {
-	start, err := GetStartTime(s.logger, req)
+	start, err := GetStartTime(req)
 	if err != nil {
 		s.logger.Error("ошибка при получении времени начала", "method", "GetEventsWeek",
 			"error", err)
@@ -183,8 +182,11 @@ func (s *CalendarServer) GetEventsWeek(ctx context.Context, req *pb.GetEventsWee
 	return resp, nil
 }
 
-func (s *CalendarServer) GetEventsMonth(ctx context.Context, req *pb.GetEventsMonthReq) (*pb.GetEventsMonthResp, error) {
-	start, err := GetStartTime(s.logger, req)
+func (s *CalendarServer) GetEventsMonth(
+	ctx context.Context,
+	req *pb.GetEventsMonthReq,
+) (*pb.GetEventsMonthResp, error) {
+	start, err := GetStartTime(req)
 	if err != nil {
 		s.logger.Error("ошибка при получении времени начала", "method", "GetEventsMonth",
 			"error", err)
@@ -221,7 +223,7 @@ func getEventIDFromBody[T interface{ GetId() string }](logger *slog.Logger, req 
 	return uuID, nil
 }
 
-func GetStartTime(logger *slog.Logger, req interface{ GetStart() *timestamppb.Timestamp }) (time.Time, error) {
+func GetStartTime(req interface{ GetStart() *timestamppb.Timestamp }) (time.Time, error) {
 	startTimestamp := req.GetStart()
 	if startTimestamp == nil {
 		return time.Time{}, server.ErrInvalidStartPeriod

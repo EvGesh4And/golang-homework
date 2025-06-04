@@ -7,27 +7,22 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
-	"github.com/google/uuid"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
 )
 
 type Server struct { // TODO
 	logger     *slog.Logger
-	app        Application
+	app        server.Application
 	httpServer *http.Server
 	ErrCh      chan error
+	handler    http.Handler
 }
 
-type Application interface {
-	CreateEvent(ctx context.Context, event storage.Event) error
-	UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error
-	DeleteEvent(ctx context.Context, id uuid.UUID) error
-	GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error)
-	GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error)
-	GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error)
+func (s *Server) Handler() http.Handler {
+	return s.handler
 }
 
-func NewServerHTTP(host string, port int, logger *slog.Logger, app Application) *Server {
+func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Application) *Server {
 	s := &Server{
 		logger: logger,
 		app:    app,
@@ -44,6 +39,7 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app Application) 
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	s.httpServer = httpServer
+	s.handler = wrapped
 
 	s.ErrCh = make(chan error, 1)
 	return s
