@@ -64,8 +64,6 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 	oldEvent, ok := s.eventMap[id]
 	if !ok {
-		s.logger.Info("событие для обновления не найдено",
-			"method", "UpdateEvent", "eventID", id.String())
 		return fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrIDNotExist)
 	}
 

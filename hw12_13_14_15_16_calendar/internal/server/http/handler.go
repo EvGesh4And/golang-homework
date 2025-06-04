@@ -2,26 +2,13 @@ package internalhttp
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
-)
-
-var (
-	ErrInvalidContentType = errors.New("Content-Type должен быть application/json")
-	ErrMissingEventID     = errors.New("отсутствует ID события в запросе")
-	ErrInvalidEventID     = errors.New("некорректный ID события")
-	ErrInvalidEventData   = errors.New("некорректные данные события")
-	ErrInvalidPeriod      = errors.New("некорректный период")
-	ErrEventRetrieval     = errors.New("ошибка при получении событий")
-	ErrInvalidStartPeriod = errors.New("некорректная дата начала периода")
-	ErrCreateEvent        = errors.New("ошибка при создании события")
-	ErrUpdateEvent        = errors.New("ошибка при обновлении события")
-	ErrDeleteEvent        = errors.New("ошибка при удалении события")
 )
 
 func (s *Server) event(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +40,7 @@ func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err := s.getEventFromBody(r)
 	if err != nil {
-		http.Error(w, ErrInvalidEventData.Error(), http.StatusBadRequest)
+		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -63,7 +50,7 @@ func (s *Server) handleCreateEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.app.CreateEvent(r.Context(), event); err != nil {
 		s.logger.Error("ошибка при создании события", "method", "handleCreateEvent",
 			"eventID", event.ID, "userID", event.UserID, "error", err)
-		http.Error(w, ErrCreateEvent.Error(), http.StatusInternalServerError)
+		http.Error(w, server.ErrCreateEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -85,7 +72,7 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err := s.getEventFromBody(r)
 	if err != nil {
-		http.Error(w, ErrInvalidEventData.Error(), http.StatusBadRequest)
+		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -96,7 +83,7 @@ func (s *Server) handleUpdateEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.app.UpdateEvent(r.Context(), uuID, event); err != nil {
 		s.logger.Error("ошибка при обновлении события", "method", "handleUpdateEvent",
 			"eventID", event.ID, "userID", event.UserID, "error", err)
-		http.Error(w, ErrUpdateEvent.Error(), http.StatusInternalServerError)
+		http.Error(w, server.ErrUpdateEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -120,13 +107,17 @@ func (s *Server) handleDeleteEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.app.DeleteEvent(r.Context(), uuID); err != nil {
 		s.logger.Error("ошибка при удалении события", "method", "handleDeleteEvent",
 			"eventID", uuID.String(), "error", err)
-		http.Error(w, ErrDeleteEvent.Error(), http.StatusInternalServerError)
+		http.Error(w, server.ErrDeleteEvent.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	s.logger.Info("событие успешно удалено", "method", "handleDeleteEvent",
 		"eventID", uuID.String())
 	w.WriteHeader(http.StatusNoContent)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"status":  "deleted",
+		"eventID": uuID.String(),
+	})
 }
 
 func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
@@ -135,12 +126,15 @@ func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.logger.Error("неверный формат времени начала", "method", "handleGetEvents",
 			"error", err)
-		http.Error(w, ErrInvalidStartPeriod.Error(), http.StatusBadRequest)
+		http.Error(w, server.ErrInvalidStartPeriod.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var events []storage.Event
 	period := r.URL.Query().Get("period")
+
+	s.logger.Debug("попытка получения событий", "method", "GetEvents",
+		"start", start.Format(time.RFC3339), "period", period)
 
 	switch period {
 	case "day":
@@ -151,14 +145,14 @@ func (s *Server) handleGetEvents(w http.ResponseWriter, r *http.Request) {
 		events, err = s.app.GetEventsMonth(r.Context(), start)
 	default:
 		s.logger.Error("неверный период", "method", "handleGetEvents", "period", period)
-		http.Error(w, ErrInvalidPeriod.Error(), http.StatusBadRequest)
+		http.Error(w, server.ErrInvalidPeriod.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
 		s.logger.Error("ошибка при получении событий", "method", "handleGetEvents",
 			"start", start.Format(time.RFC3339), "period", period, "error", err)
-		http.Error(w, ErrEventRetrieval.Error(), http.StatusInternalServerError)
+		http.Error(w, server.ErrEventRetrieval.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -180,17 +174,18 @@ func (s *Server) getEventFromBody(r *http.Request) (storage.Event, error) {
 }
 
 func (s *Server) getEventIDFromBody(r *http.Request, w http.ResponseWriter) (uuid.UUID, error) {
+	s.logger.Debug("попытка извлечь ID события из параметров запроса", "method", "getEventIDFromBody")
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		s.logger.Error(ErrMissingEventID.Error(), "id", nil)
-		http.Error(w, ErrMissingEventID.Error(), http.StatusBadRequest)
-		return uuid.Nil, ErrMissingEventID
+		s.logger.Error(server.ErrMissingEventID.Error(), "id", nil)
+		http.Error(w, server.ErrMissingEventID.Error(), http.StatusBadRequest)
+		return uuid.Nil, server.ErrMissingEventID
 	}
 	uuID, err := uuid.Parse(id)
 	if err != nil {
-		s.logger.Error(ErrInvalidEventID.Error(), "id", id, "error", err)
-		http.Error(w, ErrInvalidEventID.Error(), http.StatusBadRequest)
-		return uuid.Nil, ErrInvalidEventID
+		s.logger.Error(server.ErrInvalidEventID.Error(), "id", id, "error", err)
+		http.Error(w, server.ErrInvalidEventID.Error(), http.StatusBadRequest)
+		return uuid.Nil, server.ErrInvalidEventID
 	}
 	s.logger.Debug("успешно извлечён ID из параметров запроса", "eventID", uuID.String())
 	return uuID, nil
@@ -200,8 +195,8 @@ func (s *Server) checkContentType(w http.ResponseWriter, r *http.Request) bool {
 	const requiredContentType = "application/json"
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, requiredContentType) {
-		s.logger.Error(ErrInvalidContentType.Error(), "receivedContentType", contentType)
-		http.Error(w, ErrInvalidContentType.Error(), http.StatusBadRequest)
+		s.logger.Error(server.ErrInvalidContentType.Error(), "receivedContentType", contentType)
+		http.Error(w, server.ErrInvalidContentType.Error(), http.StatusBadRequest)
 		return false
 	}
 	s.logger.Debug("валидный Content-Type", "Content-Type", contentType)

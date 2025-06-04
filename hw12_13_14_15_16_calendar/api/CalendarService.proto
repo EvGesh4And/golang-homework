@@ -7,17 +7,16 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
 service Calendar {
-  rpc CreateEvent (CreateEventRequest) returns (google.protobuf.Empty) {}
-  rpc UpdateEvent (UpdateEventRequest) returns (google.protobuf.Empty) {}
-  rpc DeleteEvent (DeleteEventRequest) returns (google.protobuf.Empty) {}
-  rpc GetEventsDay (GetEventsDayRequest) returns (GetEventsDayResponse) {}
-  rpc GetEventsWeek (GetEventsWeekRequest) returns (GetEventsWeekResponse) {}
-  rpc GetEventsMonth (GetEventsMonthRequest) returns (GetEventsMonthResponse) {}
+  rpc CreateEvent (CreateEventReq) returns (google.protobuf.Empty) {}
+  rpc UpdateEvent (UpdateEventReq) returns (google.protobuf.Empty) {}
+  rpc DeleteEvent (DeleteEventReq) returns (google.protobuf.Empty) {}
+  rpc GetEventsDay (GetEventsDayReq) returns (GetEventsDayResp) {}
+  rpc GetEventsWeek (GetEventsWeekReq) returns (GetEventsWeekResp) {}
+  rpc GetEventsMonth (GetEventsMonthReq) returns (GetEventsMonthResp) {}
 }
 
-message CreateEventRequest {
-  string id = 1;
-  Event event = 2;
+message CreateEventReq {
+  Event event = 1;
 }
 
 message Event {
@@ -30,35 +29,35 @@ message Event {
   int64 time_before = 7;
 }
 
-message UpdateEventRequest {
+message UpdateEventReq {
   string id = 1;
   Event event = 2;
 }
 
-message DeleteEventRequest {
+message DeleteEventReq {
   string id = 1;
 }
 
-message GetEventsDayRequest {
+message GetEventsDayReq {
   google.protobuf.Timestamp start = 1;
 }
 
-message GetEventsDayResponse {
+message GetEventsDayResp {
   repeated Event events = 1;
 }
 
-message GetEventsWeekRequest {
+message GetEventsWeekReq {
   google.protobuf.Timestamp start = 1;
 }
 
-message GetEventsWeekResponse {
+message GetEventsWeekResp {
   repeated Event events = 1;
 }
 
-message GetEventsMonthRequest {
+message GetEventsMonthReq {
   google.protobuf.Timestamp start = 1;
 }
 
-message GetEventsMonthResponse {
+message GetEventsMonthResp {
   repeated Event events = 1;
 }

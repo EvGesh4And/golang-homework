@@ -8,7 +8,6 @@ package pb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -33,12 +32,12 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalendarClient interface {
-	CreateEvent(ctx context.Context, in *CreateEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	UpdateEvent(ctx context.Context, in *UpdateEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	DeleteEvent(ctx context.Context, in *DeleteEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetEventsDay(ctx context.Context, in *GetEventsDayRequest, opts ...grpc.CallOption) (*GetEventsDayResponse, error)
-	GetEventsWeek(ctx context.Context, in *GetEventsWeekRequest, opts ...grpc.CallOption) (*GetEventsWeekResponse, error)
-	GetEventsMonth(ctx context.Context, in *GetEventsMonthRequest, opts ...grpc.CallOption) (*GetEventsMonthResponse, error)
+	CreateEvent(ctx context.Context, in *CreateEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UpdateEvent(ctx context.Context, in *UpdateEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DeleteEvent(ctx context.Context, in *DeleteEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetEventsDay(ctx context.Context, in *GetEventsDayReq, opts ...grpc.CallOption) (*GetEventsDayResp, error)
+	GetEventsWeek(ctx context.Context, in *GetEventsWeekReq, opts ...grpc.CallOption) (*GetEventsWeekResp, error)
+	GetEventsMonth(ctx context.Context, in *GetEventsMonthReq, opts ...grpc.CallOption) (*GetEventsMonthResp, error)
 }
 
 type calendarClient struct {
@@ -49,7 +48,7 @@ func NewCalendarClient(cc grpc.ClientConnInterface) CalendarClient {
 	return &calendarClient{cc}
 }
 
-func (c *calendarClient) CreateEvent(ctx context.Context, in *CreateEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *calendarClient) CreateEvent(ctx context.Context, in *CreateEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Calendar_CreateEvent_FullMethodName, in, out, cOpts...)
@@ -59,7 +58,7 @@ func (c *calendarClient) CreateEvent(ctx context.Context, in *CreateEventRequest
 	return out, nil
 }
 
-func (c *calendarClient) UpdateEvent(ctx context.Context, in *UpdateEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *calendarClient) UpdateEvent(ctx context.Context, in *UpdateEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Calendar_UpdateEvent_FullMethodName, in, out, cOpts...)
@@ -69,7 +68,7 @@ func (c *calendarClient) UpdateEvent(ctx context.Context, in *UpdateEventRequest
 	return out, nil
 }
 
-func (c *calendarClient) DeleteEvent(ctx context.Context, in *DeleteEventRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *calendarClient) DeleteEvent(ctx context.Context, in *DeleteEventReq, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Calendar_DeleteEvent_FullMethodName, in, out, cOpts...)
@@ -79,9 +78,9 @@ func (c *calendarClient) DeleteEvent(ctx context.Context, in *DeleteEventRequest
 	return out, nil
 }
 
-func (c *calendarClient) GetEventsDay(ctx context.Context, in *GetEventsDayRequest, opts ...grpc.CallOption) (*GetEventsDayResponse, error) {
+func (c *calendarClient) GetEventsDay(ctx context.Context, in *GetEventsDayReq, opts ...grpc.CallOption) (*GetEventsDayResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetEventsDayResponse)
+	out := new(GetEventsDayResp)
 	err := c.cc.Invoke(ctx, Calendar_GetEventsDay_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -89,9 +88,9 @@ func (c *calendarClient) GetEventsDay(ctx context.Context, in *GetEventsDayReque
 	return out, nil
 }
 
-func (c *calendarClient) GetEventsWeek(ctx context.Context, in *GetEventsWeekRequest, opts ...grpc.CallOption) (*GetEventsWeekResponse, error) {
+func (c *calendarClient) GetEventsWeek(ctx context.Context, in *GetEventsWeekReq, opts ...grpc.CallOption) (*GetEventsWeekResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetEventsWeekResponse)
+	out := new(GetEventsWeekResp)
 	err := c.cc.Invoke(ctx, Calendar_GetEventsWeek_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -99,9 +98,9 @@ func (c *calendarClient) GetEventsWeek(ctx context.Context, in *GetEventsWeekReq
 	return out, nil
 }
 
-func (c *calendarClient) GetEventsMonth(ctx context.Context, in *GetEventsMonthRequest, opts ...grpc.CallOption) (*GetEventsMonthResponse, error) {
+func (c *calendarClient) GetEventsMonth(ctx context.Context, in *GetEventsMonthReq, opts ...grpc.CallOption) (*GetEventsMonthResp, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetEventsMonthResponse)
+	out := new(GetEventsMonthResp)
 	err := c.cc.Invoke(ctx, Calendar_GetEventsMonth_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -113,12 +112,12 @@ func (c *calendarClient) GetEventsMonth(ctx context.Context, in *GetEventsMonthR
 // All implementations must embed UnimplementedCalendarServer
 // for forward compatibility.
 type CalendarServer interface {
-	CreateEvent(context.Context, *CreateEventRequest) (*emptypb.Empty, error)
-	UpdateEvent(context.Context, *UpdateEventRequest) (*emptypb.Empty, error)
-	DeleteEvent(context.Context, *DeleteEventRequest) (*emptypb.Empty, error)
-	GetEventsDay(context.Context, *GetEventsDayRequest) (*GetEventsDayResponse, error)
-	GetEventsWeek(context.Context, *GetEventsWeekRequest) (*GetEventsWeekResponse, error)
-	GetEventsMonth(context.Context, *GetEventsMonthRequest) (*GetEventsMonthResponse, error)
+	CreateEvent(context.Context, *CreateEventReq) (*emptypb.Empty, error)
+	UpdateEvent(context.Context, *UpdateEventReq) (*emptypb.Empty, error)
+	DeleteEvent(context.Context, *DeleteEventReq) (*emptypb.Empty, error)
+	GetEventsDay(context.Context, *GetEventsDayReq) (*GetEventsDayResp, error)
+	GetEventsWeek(context.Context, *GetEventsWeekReq) (*GetEventsWeekResp, error)
+	GetEventsMonth(context.Context, *GetEventsMonthReq) (*GetEventsMonthResp, error)
 	mustEmbedUnimplementedCalendarServer()
 }
 
@@ -129,22 +128,22 @@ type CalendarServer interface {
 // pointer dereference when methods are called.
 type UnimplementedCalendarServer struct{}
 
-func (UnimplementedCalendarServer) CreateEvent(context.Context, *CreateEventRequest) (*emptypb.Empty, error) {
+func (UnimplementedCalendarServer) CreateEvent(context.Context, *CreateEventReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateEvent not implemented")
 }
-func (UnimplementedCalendarServer) UpdateEvent(context.Context, *UpdateEventRequest) (*emptypb.Empty, error) {
+func (UnimplementedCalendarServer) UpdateEvent(context.Context, *UpdateEventReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateEvent not implemented")
 }
-func (UnimplementedCalendarServer) DeleteEvent(context.Context, *DeleteEventRequest) (*emptypb.Empty, error) {
+func (UnimplementedCalendarServer) DeleteEvent(context.Context, *DeleteEventReq) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteEvent not implemented")
 }
-func (UnimplementedCalendarServer) GetEventsDay(context.Context, *GetEventsDayRequest) (*GetEventsDayResponse, error) {
+func (UnimplementedCalendarServer) GetEventsDay(context.Context, *GetEventsDayReq) (*GetEventsDayResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventsDay not implemented")
 }
-func (UnimplementedCalendarServer) GetEventsWeek(context.Context, *GetEventsWeekRequest) (*GetEventsWeekResponse, error) {
+func (UnimplementedCalendarServer) GetEventsWeek(context.Context, *GetEventsWeekReq) (*GetEventsWeekResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventsWeek not implemented")
 }
-func (UnimplementedCalendarServer) GetEventsMonth(context.Context, *GetEventsMonthRequest) (*GetEventsMonthResponse, error) {
+func (UnimplementedCalendarServer) GetEventsMonth(context.Context, *GetEventsMonthReq) (*GetEventsMonthResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventsMonth not implemented")
 }
 func (UnimplementedCalendarServer) mustEmbedUnimplementedCalendarServer() {}
@@ -169,7 +168,7 @@ func RegisterCalendarServer(s grpc.ServiceRegistrar, srv CalendarServer) {
 }
 
 func _Calendar_CreateEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateEventRequest)
+	in := new(CreateEventReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -181,13 +180,13 @@ func _Calendar_CreateEvent_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Calendar_CreateEvent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).CreateEvent(ctx, req.(*CreateEventRequest))
+		return srv.(CalendarServer).CreateEvent(ctx, req.(*CreateEventReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Calendar_UpdateEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateEventRequest)
+	in := new(UpdateEventReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -199,13 +198,13 @@ func _Calendar_UpdateEvent_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Calendar_UpdateEvent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).UpdateEvent(ctx, req.(*UpdateEventRequest))
+		return srv.(CalendarServer).UpdateEvent(ctx, req.(*UpdateEventReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Calendar_DeleteEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteEventRequest)
+	in := new(DeleteEventReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -217,13 +216,13 @@ func _Calendar_DeleteEvent_Handler(srv interface{}, ctx context.Context, dec fun
 		FullMethod: Calendar_DeleteEvent_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).DeleteEvent(ctx, req.(*DeleteEventRequest))
+		return srv.(CalendarServer).DeleteEvent(ctx, req.(*DeleteEventReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Calendar_GetEventsDay_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventsDayRequest)
+	in := new(GetEventsDayReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -235,13 +234,13 @@ func _Calendar_GetEventsDay_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Calendar_GetEventsDay_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).GetEventsDay(ctx, req.(*GetEventsDayRequest))
+		return srv.(CalendarServer).GetEventsDay(ctx, req.(*GetEventsDayReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Calendar_GetEventsWeek_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventsWeekRequest)
+	in := new(GetEventsWeekReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -253,13 +252,13 @@ func _Calendar_GetEventsWeek_Handler(srv interface{}, ctx context.Context, dec f
 		FullMethod: Calendar_GetEventsWeek_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).GetEventsWeek(ctx, req.(*GetEventsWeekRequest))
+		return srv.(CalendarServer).GetEventsWeek(ctx, req.(*GetEventsWeekReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Calendar_GetEventsMonth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetEventsMonthRequest)
+	in := new(GetEventsMonthReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -271,7 +270,7 @@ func _Calendar_GetEventsMonth_Handler(srv interface{}, ctx context.Context, dec 
 		FullMethod: Calendar_GetEventsMonth_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CalendarServer).GetEventsMonth(ctx, req.(*GetEventsMonthRequest))
+		return srv.(CalendarServer).GetEventsMonth(ctx, req.(*GetEventsMonthReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
