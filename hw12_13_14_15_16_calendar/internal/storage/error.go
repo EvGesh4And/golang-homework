@@ -1,14 +1,21 @@
 package storage
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
+
+// Ошибка в полях события.
+type ErrInvalidEvent struct {
+	Field   string
+	Message string
+}
+
+func (e *ErrInvalidEvent) Error() string {
+	return fmt.Sprintf("некорректное поле %q: %s", e.Field, e.Message)
+}
 
 var (
-	// Ошибка в полях события.
-	ErrEventValidID     = errors.New("ошибка в ID события")
-	ErrEventValidUserID = errors.New("ошибка в ID пользователя события")
-	ErrEventValidStart  = errors.New("ошибка в дате и времени начала события")
-	ErrEventValidEnd    = errors.New("ошибка в длительности события")
-	ErrEventValidBefore = errors.New("ошибка в времени заблаговременного уведомления")
 	// Ошибка с ID.
 	ErrIDRepeated = errors.New("событие с таким ID уже есть в хранилище")
 	ErrIDNotExist = errors.New("события с таким ID не существует")

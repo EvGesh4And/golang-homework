@@ -24,19 +24,34 @@ type Interval struct {
 
 func (e Event) CheckValid() error {
 	if e.ID == uuid.Nil {
-		return ErrEventValidID
+		return &ErrInvalidEvent{
+			Field:   "id",
+			Message: "ID события обязателен",
+		}
 	}
 	if e.UserID == uuid.Nil {
-		return ErrEventValidUserID
+		return &ErrInvalidEvent{
+			Field:   "userId",
+			Message: "ID пользователя обязателен",
+		}
 	}
 	if e.Start.Before(time.Now()) {
-		return ErrEventValidStart
+		return &ErrInvalidEvent{
+			Field:   "start",
+			Message: "время начала не может быть в прошлом",
+		}
 	}
 	if e.End.Before(e.Start) {
-		return ErrEventValidEnd
+		return &ErrInvalidEvent{
+			Field:   "end",
+			Message: "время окончания события должно быть после времени начала",
+		}
 	}
 	if e.TimeBefore < 0 {
-		return ErrEventValidBefore
+		return &ErrInvalidEvent{
+			Field:   "timeBefore",
+			Message: "время уведомления должно быть положительным",
+		}
 	}
 	return nil
 }

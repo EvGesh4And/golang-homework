@@ -29,10 +29,14 @@ func New(level string, out io.Writer) *slog.Logger {
 		log.Print("уровень логгирования: debug (по умолчанию)")
 	}
 
-	logger := slog.New(tint.NewHandler(out, &tint.Options{
+	handler := tint.NewHandler(out, &tint.Options{
 		Level:      levLog,
 		TimeFormat: time.Kitchen,
-	}))
+	})
+
+	handler = NewHandlerMiddleware(handler)
+
+	logger := slog.New(handler)
 
 	return logger
 }

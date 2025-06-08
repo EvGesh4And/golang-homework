@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
 )
@@ -28,35 +29,33 @@ func New(logger *slog.Logger) *Storage {
 }
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	s.logger.Debug("попытка создать событие", "method", "CreateEvent", "eventID",
-		event.ID.String(), "userID", event.UserID.String(), "event", event)
+	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	s.logger.DebugContext(ctx, "попытка создать событие")
 
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("storage:memory.CreateEvent: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", err))
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.eventMap[event.ID]; ok {
-		return fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrIDRepeated)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrIDRepeated))
 	}
 	if !s.intervals.AddIfFree(event.GetInterval()) {
-		return fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrDateBusy)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrDateBusy))
 	}
 
 	s.eventMap[event.ID] = event
-	s.logger.Info("успешно создано событие", "method", "CreateEvent",
-		"eventID", event.ID.String(), "userID", event.UserID.String())
+	s.logger.InfoContext(ctx, "успешно создано событие")
 	return nil
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	s.logger.Debug("попытка обновить событие", "method", "UpdateEvent",
-		"eventID", id.String(), "newUserID", newEvent.UserID.String(), "newEvent", newEvent)
+	s.logger.DebugContext(ctx, "попытка обновить событие")
 
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("storage:memory.UpdateEvent: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", err))
 	}
 
 	s.mu.Lock()
@@ -64,24 +63,23 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 	oldEvent, ok := s.eventMap[id]
 	if !ok {
-		return fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrIDNotExist)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrIDNotExist))
 	}
 
 	if !s.intervals.Replace(newEvent.GetInterval(), oldEvent.GetInterval()) {
-		return fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrDateBusy)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrDateBusy))
 	}
 
 	s.eventMap[id] = newEvent
-	s.logger.Info("успешно обновлено событие", "method", "UpdateEvent",
-		"eventID", id.String(), "userID", newEvent.UserID.String())
+	s.logger.InfoContext(ctx, "успешно обновлено событие")
 	return nil
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	s.logger.Debug("попытка удалить событие", "method", "DeleteEvent", "eventID", id.String())
+	s.logger.DebugContext(ctx, "попытка удалить событие")
 
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("storage:memory.DeleteEvent: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.DeleteEvent: %w", err))
 	}
 
 	s.mu.Lock()
@@ -89,14 +87,13 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 	event, ok := s.eventMap[id]
 	if !ok {
-		return fmt.Errorf("storage:memory.DeleteEvent: %w", storage.ErrIDNotExist)
+		return logger.WrapError(ctx, fmt.Errorf("storage:memory.DeleteEvent: %w", storage.ErrIDNotExist))
 	}
 
 	s.intervals.Remove(event.GetInterval())
 	delete(s.eventMap, id)
 
-	s.logger.Info("успешно удалено событие", "method", "DeleteEvent",
-		"eventID", id.String(), "userID", event.UserID.String())
+	s.logger.InfoContext(ctx, "успешно удалено событие")
 	return nil
 }
 
@@ -123,14 +120,13 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		d = time.Hour * 24 * 30
 	}
 
-	s.logger.Debug(
-		"попытка получить события за интервал",
-		"method", fmt.Sprintf("GetEvents%s", period),
-		"start", start.Format(time.RFC3339),
-	)
+	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
+	ctx = logger.WithLogStart(ctx, start)
+
+	s.logger.DebugContext(ctx, "попытка получить события за интервал")
 
 	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("storage:memory.getEvents: %w", err)
+		return nil, logger.WrapError(ctx, fmt.Errorf("storage:memory.getEvents: %w", err))
 	}
 
 	s.mu.RLock()
@@ -143,16 +139,11 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	for _, inter := range intervals {
 		event, ok := s.eventMap[inter.ID]
 		if !ok {
-			return nil, fmt.Errorf("storage:memory.getEvents: %w", storage.ErrGetEvents)
+			return nil, logger.WrapError(ctx, fmt.Errorf("storage:memory.getEvents: %w", storage.ErrGetEvents))
 		}
 		res = append(res, event)
 	}
 
-	s.logger.Info(
-		"успешно получены события",
-		"method", fmt.Sprintf("GetEvents%s", period),
-		"count", len(res),
-		"start", start.Format(time.RFC3339),
-	)
+	s.logger.InfoContext(ctx, "успешно получены события", "count", len(res))
 	return res, nil
 }

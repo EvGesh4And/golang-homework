@@ -143,7 +143,7 @@ func TestGetEventsDay(t *testing.T) {
 
 	logger := logger.New("info", os.Stdout)
 	server := NewServerHTTP("localhost", 8080, logger, app)
-	req := httptest.NewRequest(http.MethodGet, "/event?start=2025-01-01T00:00:00Z&period=day", nil)
+	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
 	server.Handler().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
@@ -162,7 +162,7 @@ func TestGetEventsWeek(t *testing.T) {
 
 	logger := logger.New("info", os.Stdout)
 	server := NewServerHTTP("localhost", 8080, logger, app)
-	req := httptest.NewRequest(http.MethodGet, "/event?start=2025-01-01T00:00:00Z&period=week", nil)
+	req := httptest.NewRequest(http.MethodGet, "/event/week?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
 	server.Handler().ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
@@ -181,7 +181,7 @@ func TestGetEventsMonth(t *testing.T) {
 
 	logger := logger.New("info", os.Stdout)
 	server := NewServerHTTP("localhost", 8080, logger, app)
-	req := httptest.NewRequest(http.MethodGet, "/event?start=2025-01-01T00:00:00Z&period=month", nil)
+	req := httptest.NewRequest(http.MethodGet, "/event/month?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
 
 	server.Handler().ServeHTTP(w, req)

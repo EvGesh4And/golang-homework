@@ -10,9 +10,9 @@ service Calendar {
   rpc CreateEvent (CreateEventReq) returns (google.protobuf.Empty) {}
   rpc UpdateEvent (UpdateEventReq) returns (google.protobuf.Empty) {}
   rpc DeleteEvent (DeleteEventReq) returns (google.protobuf.Empty) {}
-  rpc GetEventsDay (GetEventsDayReq) returns (GetEventsDayResp) {}
-  rpc GetEventsWeek (GetEventsWeekReq) returns (GetEventsWeekResp) {}
-  rpc GetEventsMonth (GetEventsMonthReq) returns (GetEventsMonthResp) {}
+  rpc GetEventsDay (GetEventsReq) returns (GetEventsResp) {}
+  rpc GetEventsWeek (GetEventsReq) returns (GetEventsResp) {}
+  rpc GetEventsMonth (GetEventsReq) returns (GetEventsResp) {}
 }
 
 message CreateEventReq {
@@ -38,26 +38,10 @@ message DeleteEventReq {
   string id = 1;
 }
 
-message GetEventsDayReq {
+message GetEventsReq {
   google.protobuf.Timestamp start = 1;
 }
 
-message GetEventsDayResp {
-  repeated Event events = 1;
-}
-
-message GetEventsWeekReq {
-  google.protobuf.Timestamp start = 1;
-}
-
-message GetEventsWeekResp {
-  repeated Event events = 1;
-}
-
-message GetEventsMonthReq {
-  google.protobuf.Timestamp start = 1;
-}
-
-message GetEventsMonthResp {
+message GetEventsResp {
   repeated Event events = 1;
 }

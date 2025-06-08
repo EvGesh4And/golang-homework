@@ -200,7 +200,7 @@ func TestGetEventsDay(t *testing.T) {
 
 	defer shutdown()
 
-	resp, err := client.GetEventsDay(context.Background(), &pb.GetEventsDayReq{
+	resp, err := client.GetEventsDay(context.Background(), &pb.GetEventsReq{
 		Start: timestamppb.New(now),
 	})
 
@@ -224,7 +224,7 @@ func TestGetEventsWeek(t *testing.T) {
 
 	defer shutdown()
 
-	resp, err := client.GetEventsWeek(context.Background(), &pb.GetEventsWeekReq{
+	resp, err := client.GetEventsWeek(context.Background(), &pb.GetEventsReq{
 		Start: timestamppb.New(now),
 	})
 
@@ -245,7 +245,7 @@ func TestGetEventsMonth(t *testing.T) {
 		},
 	})
 	defer shutdown()
-	resp, err := client.GetEventsMonth(context.Background(), &pb.GetEventsMonthReq{
+	resp, err := client.GetEventsMonth(context.Background(), &pb.GetEventsReq{
 		Start: timestamppb.New(now),
 	})
 	assert.NoError(t, err)

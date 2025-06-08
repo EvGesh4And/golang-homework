@@ -28,10 +28,9 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Applic
 		app:    app,
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/event", s.event)
+	mux := s.routes()
 
-	wrapped := loggingMiddleware(logger)(mux)
+	wrapped := s.loggingMiddleware(mux)
 
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", host, port),
