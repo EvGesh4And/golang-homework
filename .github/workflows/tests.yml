@@ -76,6 +76,22 @@ jobs:
         run: make lint
         working-directory: hw12_13_14_15_16_calendar
 
+      - name: Install protoc and Go plugins
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+          # Устанавливаем плагины protoc для Go
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+          # Добавляем их в PATH
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: make generate
+        run: make generate
+        working-directory: hw12_13_14_15_16_calendar
+
       - name: make build
         run: make build
         working-directory: hw12_13_14_15_16_calendar
