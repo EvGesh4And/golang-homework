@@ -2,9 +2,13 @@ package consumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/streadway/amqp"
 )
 
@@ -14,14 +18,16 @@ type RabbitConsumer struct {
 	tag     string
 	done    chan error
 	queue   amqp.Queue
+	logger  *slog.Logger
 }
 
-func NewRabbitConsumer(cfg RabbitMQConf) (*RabbitConsumer, error) {
+func NewRabbitConsumer(cfg RabbitMQConf, logger *slog.Logger) (*RabbitConsumer, error) {
 	c := &RabbitConsumer{
 		conn:    nil,
 		channel: nil,
 		tag:     cfg.ConsumerTag,
 		done:    make(chan error),
+		logger:  logger,
 	}
 
 	var err error
@@ -103,7 +109,9 @@ func (c *RabbitConsumer) Shutdown() error {
 }
 
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
-	log.Printf("Queue bound to Exchange, starting Consume (consumer tag %q)", c.tag)
+	ctx = logger.WithLogMethod(ctx, "Handle")
+
+	c.logger.InfoContext(ctx, "queue bound to Exchange, starting Consume", "consumer_tag", c.tag)
 	deliveries, err := c.channel.Consume(
 		c.queue.Name, // name
 		c.tag,        // consumerTag,
@@ -129,7 +137,16 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 				d.DeliveryTag,
 				d.Body,
 			)
+			c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
 			d.Ack(false)
+
+			var notification storage.Notification
+			if err := json.Unmarshal(d.Body, &notification); err != nil {
+				c.logger.ErrorContext(ctx, "error during unmarshal", "error", err)
+				return err
+			}
+
+			c.logger.InfoContext(ctx, "notification event", "notification", notification)
 		}
 	}
 	// log.Printf("handle: deliveries channel closed")

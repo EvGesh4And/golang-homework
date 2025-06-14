@@ -1,4 +1,4 @@
-BIN := "./bin/calendar"
+BIN := "./bin"
 DOCKER_IMG="calendar:develop"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
@@ -7,11 +7,21 @@ LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%d
 generate:
 	go generate ./...
 
-build:
-	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+build: build-calendar build-scheduler build-sender
 
-run: build
-	$(BIN) -config ./configs/calendar_config.toml
+build-calendar:
+	go build -v -o $(BIN)/calendar -ldflags "$(LDFLAGS)" ./cmd/calendar
+
+build-scheduler:
+	go build -v -o $(BIN)/scheduler -ldflags "$(LDFLAGS)" ./cmd/scheduler
+
+build-sender:
+	go build -v -o $(BIN)/sender -ldflags "$(LDFLAGS)" ./cmd/sender
+
+run: build-calendar
+	$(BIN)/calendar -config ./configs/calendar_config.toml
+	$(BIN)/scheduler -config ./configs/scheduler_config.toml
+	$(BIN)/sender -config ./configs/sender_config.toml
 
 build-img:
 	docker build \
@@ -22,8 +32,8 @@ build-img:
 run-img: build-img
 	docker run $(DOCKER_IMG)
 
-version: build
-	$(BIN) version
+version: build-calendar
+	$(BIN)/calendar version
 
 # Запуск PostgreSQL в Docker для тестов
 test-db-run:
@@ -34,14 +44,14 @@ test-db-run:
 		-p 54321:5432 \
 		postgres:15
 
-# Ожидание пока БД будет готова (не самый быстрый способ, но простой)
+# Ожидание пока БД будет готова
 wait-db:
 	@echo "Waiting for PostgreSQL to be ready..."
 	@until pg_isready -h localhost -p 54321 -U otus_user > /dev/null 2>&1; do \
 		sleep 1; \
 	done
 
-# Остановка контейнера с БД (если нужно)
+# Остановка контейнера с БД
 test-db-stop:
 	docker stop calendar-test-db || true
 
@@ -56,4 +66,4 @@ lint: install-lint-deps
 	go mod download
 	golangci-lint run ./...
 
-.PHONY: generate build run build-img run-img version test lint test-db-run wait-db test-db-stop
+.PHONY: generate build build-calendar build-scheduler build-sender run build-img run-img version test lint test-db-run wait-db test-db-stop

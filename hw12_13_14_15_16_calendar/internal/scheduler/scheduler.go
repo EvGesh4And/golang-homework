@@ -16,7 +16,7 @@ type Storage interface {
 }
 
 type Publisher interface {
-	Publish(body string) error
+	Publish(ctx context.Context, body string) error
 	Close()
 }
 
@@ -77,7 +77,7 @@ func (s *Scheduler) PublishNotifications(ctx context.Context) {
 			s.logger.ErrorContext(ctx, "ошибка сериализации уведомления", "error", err)
 			continue
 		}
-		if err := s.publisher.Publish(string(json)); err != nil {
+		if err := s.publisher.Publish(ctx, string(json)); err != nil {
 			s.logger.ErrorContext(ctx, "ошибка публикации уведомления", "error", err)
 			continue
 		}

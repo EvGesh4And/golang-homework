@@ -1,9 +1,12 @@
 package producer
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"log/slog"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/streadway/amqp"
 )
 
@@ -12,9 +15,10 @@ type RabbitProducer struct {
 	channel    *amqp.Channel
 	exchange   string
 	routingKey string
+	logger     *slog.Logger
 }
 
-func NewRabbitProducer(cfg RabbitMQConf) (*RabbitProducer, error) {
+func NewRabbitProducer(cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
 	log.Printf("dialing %q", cfg.URI)
 	conn, err := amqp.Dial(cfg.URI)
 	if err != nil {
@@ -47,10 +51,14 @@ func NewRabbitProducer(cfg RabbitMQConf) (*RabbitProducer, error) {
 		channel:    ch,
 		exchange:   cfg.Exchange,
 		routingKey: cfg.RoutingKey,
+		logger:     logger,
 	}, nil
 }
 
-func (p *RabbitProducer) Publish(body string) error {
+func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
+	ctx = logger.WithLogMethod(ctx, "Publish")
+	p.logger.InfoContext(ctx, "публикация сообщения", "body", body)
+
 	return p.channel.Publish(
 		p.exchange,   // publish to an exchange
 		p.routingKey, // routing to 0 or more queues

@@ -10,7 +10,7 @@ import (
 )
 
 type ChildLoggers struct {
-	scheduler *slog.Logger
+	sender *slog.Logger
 }
 
 func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
@@ -39,7 +39,7 @@ func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
 	}
 
 	childLoggers := &ChildLoggers{
-		scheduler: globalLogger.With("component", "sender"),
+		sender: globalLogger.With("component", "sender"),
 	}
 
 	return childLoggers, logFile, nil

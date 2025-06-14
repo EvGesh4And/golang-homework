@@ -26,7 +26,7 @@ func main() {
 
 	log.SetOutput(os.Stdout)
 	cfg := NewConfig()
-	_, closer, err := setupLogger(cfg)
+	childLoggers, closer, err := setupLogger(cfg)
 	if err != nil {
 		return
 	}
@@ -36,7 +36,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	consumer, err := consumer.NewRabbitConsumer(cfg.RabbitMQ)
+	consumer, err := consumer.NewRabbitConsumer(cfg.RabbitMQ, childLoggers.sender)
 	if err != nil {
 		return
 	}
