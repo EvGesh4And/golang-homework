@@ -43,7 +43,7 @@ func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
 			filePath = "calendar.log" // путь по умолчанию, если не задан
 		}
 
-		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
 			log.Printf("не удалось открыть лог-файл %s: %s", filePath, err.Error())
 			return nil, nil, err

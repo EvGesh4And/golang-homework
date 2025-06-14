@@ -211,7 +211,6 @@ func (s *Storage) GetNotifications(
 	currTime time.Time,
 	tick time.Duration,
 ) ([]storage.Notification, error) {
-
 	ctx = logger.WithLogMethod(ctx, "GetNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
@@ -251,4 +250,31 @@ func (s *Storage) GetNotifications(
 	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
 
 	return notifications, nil
+}
+
+func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error {
+	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
+	ctx = logger.WithLogStart(ctx, delTime)
+
+	s.logger.DebugContext(ctx, "попытка удалить старые события")
+
+	query := `
+        DELETE FROM events
+        WHERE end_time < $1
+    `
+
+	res, err := s.db.ExecContext(ctx, query, delTime)
+	if err != nil {
+		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+	}
+	if count > 0 {
+		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
+	} else {
+		s.logger.InfoContext(ctx, "нет старых событий для удаления")
+	}
+	return nil
 }

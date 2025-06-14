@@ -7,4 +7,12 @@ level = "debug"
 dsn = "host=192.168.1.20 port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable"
 
 [notifications]
-tick = "10s"
+tick = "20s"
+event_ttl = "5m"
+
+[rabbitmq]
+uri = "amqp://guest:guest@192.168.1.20:5672/"
+exchange = "events"
+exchange_type = "topic"
+routing_key = "event.#"
+reliable = true

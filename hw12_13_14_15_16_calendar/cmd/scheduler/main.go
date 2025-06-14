@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/rabbitmq/producer"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/scheduler"
 )
 
@@ -49,7 +50,21 @@ func main() {
 		}
 	}()
 
-	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, cfg.Notifications.Tick)
+	producer, err := producer.NewRabbitProducer(cfg.RabbitMQ)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		if err := closer.Close(); err != nil {
+			log.Printf("ошибка закрытия pubsub: %s", err)
+		} else {
+			log.Print("pubsub успешно закрыт")
+		}
+	}()
+
+	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
 
 	scheduler.Start(ctx)
+	log.Print("scheduler завершился корректно...")
 }
