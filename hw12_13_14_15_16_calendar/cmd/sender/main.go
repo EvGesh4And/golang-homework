@@ -42,11 +42,12 @@ func main() {
 	}
 
 	if err := consumer.Handle(ctx); err != nil {
-		log.Fatalf("error during handling: %s", err)
+		log.Printf("error during handling: %s", err)
 	}
 
 	if err := consumer.Shutdown(); err != nil {
-		log.Fatalf("error during shutdown: %s", err)
+		log.Printf("error during shutdown: %s", err)
+		return
 	}
 
 	log.Print("sender завершился корректно...")

@@ -10,9 +10,7 @@ import (
 )
 
 type ChildLoggers struct {
-	scheduler  *slog.Logger
-	storageSQL *slog.Logger
-	pubsub     *slog.Logger
+	scheduler *slog.Logger
 }
 
 func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {

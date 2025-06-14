@@ -52,7 +52,7 @@ func NewRabbitConsumer(cfg RabbitMQConf) (*RabbitConsumer, error) {
 		false,            // noWait
 		nil,              // arguments
 	); err != nil {
-		return nil, fmt.Errorf("Exchange Declare: %s", err)
+		return nil, fmt.Errorf("exchange Declare: %w", err)
 	}
 
 	log.Printf("declared Exchange, declaring Queue %q", cfg.Queue)
