@@ -10,27 +10,17 @@ import (
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	server "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
 	storage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
-
-type application interface {
-	CreateEvent(ctx context.Context, event storage.Event) error
-	UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error
-	DeleteEvent(ctx context.Context, id uuid.UUID) error
-	GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error)
-	GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error)
-	GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error)
-}
 
 type CalendarServer struct {
 	logger *slog.Logger
 	pb.UnimplementedCalendarServer
-	app application
+	app server.Application
 	lis net.Listener
 }
 
-func NewServerGRPC(logger *slog.Logger, lis net.Listener, app application) *CalendarServer {
+func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application) *CalendarServer {
 	return &CalendarServer{
 		logger: logger,
 		lis:    lis,

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net"
@@ -28,8 +29,30 @@ type ChildLoggers struct {
 	grpc       *slog.Logger
 }
 
-func setupLogger(cfg Config) *ChildLoggers {
-	globalLogger := logger.New(cfg.Logger.Level, os.Stdout)
+func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
+	var err error
+	var logFile *os.File
+	var globalLogger *slog.Logger
+
+	switch cfg.Logger.Mod {
+	case "console":
+		globalLogger = logger.New(cfg.Logger.Level, os.Stdout)
+	case "file":
+		filePath := cfg.Logger.Path
+		if filePath == "" {
+			filePath = "calendar.log" // путь по умолчанию, если не задан
+		}
+
+		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			log.Printf("не удалось открыть лог-файл %s: %s", filePath, err.Error())
+			return nil, nil, err
+		}
+		globalLogger = logger.New(cfg.Logger.Level, logFile)
+	default:
+		log.Printf("неизвестный режим логгера: %s, используется консоль", cfg.Logger.Mod)
+		globalLogger = logger.New(cfg.Logger.Level, os.Stdout)
+	}
 
 	childLoggers := &ChildLoggers{
 		app:        globalLogger.With("component", "app"),
@@ -39,52 +62,42 @@ func setupLogger(cfg Config) *ChildLoggers {
 		grpc:       globalLogger.With("component", "grpc"),
 	}
 
-	return childLoggers
+	return childLoggers, logFile, nil
 }
 
-func setupStorage(cfg Config, childLoggers *ChildLoggers) (app.Storage, error) {
+func setupStorage(ctx context.Context, cfg Config, childLoggers *ChildLoggers) (app.Storage, io.Closer, error) {
 	logStorageMem := childLoggers.storageMem
 	logStorageSQL := childLoggers.storageSQL
 
 	switch cfg.Storage.Mod {
 	case "memory":
 		log.Print("используется in-memory хранилище")
-		return memorystorage.New(logStorageMem), nil
+		return memorystorage.New(logStorageMem), nil, nil
 
 	case "sql":
 		log.Print("инициализация подключения к PostgreSQL...")
 
 		sqlStorage := sqlstorage.New(logStorageSQL, cfg.Storage.DSN)
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		if err := sqlStorage.Connect(ctx); err != nil {
 			log.Printf("ошибка подключения к PostgreSQL: %v", err)
-			return nil, err
+			return nil, nil, err
 		}
-
-		go func() {
-			defer func() {
-				if err := sqlStorage.Close(); err != nil {
-					log.Print("ошибка закрытия psql подключения", err)
-				} else {
-					log.Print("psql подключение успешно закрыто")
-				}
-			}()
-		}()
 
 		log.Print("выполнение миграций...")
 		if err := sqlStorage.Migrate(cfg.Storage.Migration); err != nil {
 			log.Print(err)
-			return nil, err
+			return nil, nil, err
 		}
 
 		log.Print("SQL-хранилище успешно инициализировано и подключено")
-		return sqlStorage, nil
+		return sqlStorage, sqlStorage, nil
 
 	default:
 		log.Printf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
-		return nil, fmt.Errorf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
+		return nil, nil, fmt.Errorf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
 	}
 }
 
@@ -148,6 +161,8 @@ func startGRPCServer(
 	serverGRPC := grpcserver.NewServerGRPC(logGRPC, lis, calendar)
 	grpcSrv := grpc.NewServer()
 	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
+
+	log.Print("gRPC сервер создан")
 
 	errCh := make(chan error, 1)
 

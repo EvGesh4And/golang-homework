@@ -1,15 +1,18 @@
 package main
 
-import "github.com/BurntSushi/toml"
+import (
+	"time"
+
+	"github.com/BurntSushi/toml"
+)
 
 // При желании конфигурацию можно вынести в internal/config.
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger  LoggerConf  `toml:"logger"`
-	Storage StorageConf `toml:"storage"`
-	HTTP    HTTPConf    `toml:"http"`
-	GRPC    GRPCConf    `toml:"grpc"`
+	Logger        LoggerConf        `toml:"logger"`
+	Storage       StorageConf       `toml:"storage"`
+	Notifications NotificationsConf `toml:"notifications"`
 }
 
 type LoggerConf struct {
@@ -19,19 +22,11 @@ type LoggerConf struct {
 }
 
 type StorageConf struct {
-	Mod       string `toml:"mod"`
-	DSN       string `toml:"dsn"`
-	Migration string `toml:"migration"`
+	DSN string `toml:"dsn"`
 }
 
-type HTTPConf struct {
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
-}
-
-type GRPCConf struct {
-	Host string `toml:"host"`
-	Port int    `toml:"port"`
+type NotificationsConf struct {
+	Tick time.Duration `toml:"tick"`
 }
 
 func NewConfig() Config {

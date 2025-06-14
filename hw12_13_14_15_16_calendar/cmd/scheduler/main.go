@@ -6,16 +6,15 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/scheduler"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "configs/calendar_config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "configs/scheduler_config.toml", "Path to configuration file")
 }
 
 func main() {
@@ -44,16 +43,13 @@ func main() {
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища %s: %s", cfg.Storage.Mod, err)
+			log.Printf("ошибка закрытия хранилища sql: %s", err)
 		} else {
-			log.Printf("хранилище %s успешно закрыто", cfg.Storage.Mod)
+			log.Print("хранилище sql успешно закрыто")
 		}
 	}()
 
-	calendar := app.New(childLoggers.app, storage)
+	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, cfg.Notifications.Tick)
 
-	wg := sync.WaitGroup{}
-	startHTTPServer(ctx, &wg, cfg, childLoggers.http, calendar)
-	startGRPCServer(ctx, &wg, cfg, childLoggers.grpc, calendar)
-	wg.Wait()
+	scheduler.Start(ctx)
 }

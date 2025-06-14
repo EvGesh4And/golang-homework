@@ -142,7 +142,12 @@ func (s *Server) handleGetEvents(
 		return
 	}
 
+	eventsDTO := make([]storage.EventDTO, len(events))
+	for i := range events {
+		eventsDTO[i] = storage.ToDTO(events[i])
+	}
+
 	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
 	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(events)
+	_ = json.NewEncoder(w).Encode(eventsDTO)
 }

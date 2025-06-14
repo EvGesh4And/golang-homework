@@ -4,8 +4,8 @@ package logger
 
 import (
 	"io"
-	"log"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -20,23 +20,29 @@ var levelMap = map[string]slog.Level{
 
 func New(level string, out io.Writer) *slog.Logger {
 	var levLog slog.Level
-
 	if lvl, ok := levelMap[level]; ok {
 		levLog = lvl
-		log.Print("уровень логгирования: ", lvl)
 	} else {
 		levLog = slog.LevelDebug
-		log.Print("уровень логгирования: debug (по умолчанию)")
 	}
+
+	color := isStdout(out)
 
 	handler := tint.NewHandler(out, &tint.Options{
 		Level:      levLog,
 		TimeFormat: time.Kitchen,
+		NoColor:    !color,
 	})
 
 	handler = NewHandlerMiddleware(handler)
 
-	logger := slog.New(handler)
+	return slog.New(handler)
+}
 
-	return logger
+func isStdout(out io.Writer) bool {
+	f, ok := out.(*os.File)
+	if !ok {
+		return false
+	}
+	return f.Fd() == os.Stdout.Fd()
 }

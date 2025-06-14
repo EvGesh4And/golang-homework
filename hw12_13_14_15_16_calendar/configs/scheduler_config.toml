@@ -1,0 +1,10 @@
+[logger]
+mod = "console"
+path = "scheduler.log"
+level = "debug"
+
+[storage]
+dsn = "host=192.168.1.20 port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable"
+
+[notifications]
+tick = "10s"

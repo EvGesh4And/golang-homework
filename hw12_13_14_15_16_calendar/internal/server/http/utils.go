@@ -13,12 +13,12 @@ import (
 )
 
 func (s *Server) getEventFromBody(ctx context.Context, r *http.Request) (storage.Event, error) {
-	var event storage.Event
+	var event storage.EventDTO
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		return storage.Event{}, err
 	}
 	s.logger.DebugContext(ctx, "успешно распарсено тело запроса в event")
-	return event, nil
+	return storage.FromDTO(event), nil
 }
 
 func (s *Server) getEventIDFromBody(ctx context.Context, r *http.Request) (uuid.UUID, error) {
