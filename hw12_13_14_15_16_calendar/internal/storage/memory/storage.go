@@ -147,3 +147,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	s.logger.InfoContext(ctx, "успешно получены события", "count", len(res))
 	return res, nil
 }
+
+func (s *Storage) Close() error {
+	return nil // ничего закрывать не нужно
+}

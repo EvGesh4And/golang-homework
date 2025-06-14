@@ -205,3 +205,76 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 
 	return events, nil
 }
+
+func (s *Storage) GetNotifications(
+	ctx context.Context,
+	currTime time.Time,
+	tick time.Duration,
+) ([]storage.Notification, error) {
+	ctx = logger.WithLogMethod(ctx, "GetNotifications")
+	ctx = logger.WithLogStart(ctx, currTime)
+
+	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+
+	query := `
+        SELECT id, title, start_time, user_id
+        FROM events
+        WHERE start_time - time_before <= $2 AND start_time - time_before >= $1
+    `
+
+	rows, err := s.db.QueryContext(ctx, query, currTime, currTime.Add(tick))
+	if err != nil {
+		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+	}
+	defer rows.Close()
+
+	var notifications []storage.Notification
+	for rows.Next() {
+		var notification storage.Notification
+		if err := rows.Scan(
+			&notification.ID,
+			&notification.Title,
+			&notification.Start,
+			&notification.UserID,
+		); err != nil {
+			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+		}
+
+		notifications = append(notifications, notification)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+	}
+
+	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+
+	return notifications, nil
+}
+
+func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error {
+	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
+	ctx = logger.WithLogStart(ctx, delTime)
+
+	s.logger.DebugContext(ctx, "попытка удалить старые события")
+
+	query := `
+        DELETE FROM events
+        WHERE end_time < $1
+    `
+
+	res, err := s.db.ExecContext(ctx, query, delTime)
+	if err != nil {
+		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+	}
+	count, err := res.RowsAffected()
+	if err != nil {
+		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+	}
+	if count > 0 {
+		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
+	} else {
+		s.logger.InfoContext(ctx, "нет старых событий для удаления")
+	}
+	return nil
+}

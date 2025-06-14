@@ -28,6 +28,7 @@ linters-settings:
           - google.golang.org/protobuf/types/known/timestamppb
           - google.golang.org/grpc
           - github.com/lmittmann/tint
+          - github.com/streadway/amqp
       Test:
         files:
           - $test

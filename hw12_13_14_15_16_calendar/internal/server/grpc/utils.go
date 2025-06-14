@@ -21,7 +21,7 @@ func convertToEventProto(e storage.Event) *pb.Event {
 		StartTime:   timestamppb.New(e.Start),
 		EndTime:     timestamppb.New(e.End),
 		Description: e.Description,
-		TimeBefore:  int64(e.TimeBefore),
+		TimeBefore:  int64(e.TimeBefore.Seconds()),
 	}
 }
 
@@ -53,7 +53,7 @@ func getEventFromBody[T interface{ GetEvent() *pb.Event }](
 		Start:       eventPB.StartTime.AsTime(),
 		End:         eventPB.EndTime.AsTime(),
 		Description: eventPB.Description,
-		TimeBefore:  time.Duration(eventPB.TimeBefore),
+		TimeBefore:  time.Duration(eventPB.TimeBefore * int64(time.Second)),
 	}, nil
 }
 
