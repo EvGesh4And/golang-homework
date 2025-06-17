@@ -1,17 +1,17 @@
 [logger]
 mod = "console"
-path = "calendar.log"
+path = "/var/log/calendar.log"
 level = "debug"
 
 [storage]
 mod = "sql"
-dsn = "host=192.168.1.20 port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable"
+dsn = "host=db port=5432 user=otus_user password=otus_password dbname=otus sslmode=disable"
 migration = "migrations"
 
 [http]
-host = "localhost"
+host = "0.0.0.0"
 port = 8080
 
 [grpc]
-host = "localhost"
+host = "0.0.0.0"
 port = 50051

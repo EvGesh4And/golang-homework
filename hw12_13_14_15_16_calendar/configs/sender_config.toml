@@ -1,10 +1,10 @@
 [logger]
 mod = "console"
-path = "scheduler.log"
+path = "/var/log/sender.log"
 level = "debug"
 
 [rabbitmq]
-uri = "amqp://guest:guest@192.168.1.20:5672/"
+uri = "amqp://guest:guest@rb:5672/"
 exchange = "events"
 exchange_type = "topic"
 queue = "events-queue"
