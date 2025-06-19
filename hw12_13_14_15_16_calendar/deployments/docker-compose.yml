@@ -2,37 +2,32 @@ version: "3.8"
 
 services:
   db:
-    image: evgesh4/db:0.5
+    image: db:develop
     container_name: db
-    ports:
-      - "54321:5432"
 
   rb:
-    image: evgesh4/rb:0.5
+    image: rb:develop
     container_name: rb
-    ports:
-      - "15672:15672"  # RabbitMQ Web UI
-      - "5672:5672"    # RabbitMQ AMQP
 
   calendar:
-    image: evgesh4/calendar:0.5
+    image: calendar:develop
     container_name: calendar
     depends_on:
       - db
       - rb
     ports:
-      - "8080:8080"     # HTTP
+      - "8888:8888"     # HTTP
       - "50051:50051"   # gRPC
 
   scheduler:
-    image: evgesh4/scheduler:0.5
+    image: scheduler:develop
     container_name: scheduler
     depends_on:
       - db
       - rb
 
   sender:
-    image: evgesh4/sender:0.5
+    image: sender:develop
     container_name: sender
     depends_on:
       - rb

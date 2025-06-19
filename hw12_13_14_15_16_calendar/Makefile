@@ -1,39 +1,45 @@
-BIN := "./bin"
-DOCKER_IMG="calendar:develop"
+# ───── настройки ─────
+BIN       ?= ./bin
+SERVICES  := calendar scheduler sender   # ← новый сервис? просто допиши сюда
+TAG       ?= develop
 
-GIT_HASH := $(shell git log --format="%h" -n 1)
-LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
+GIT_HASH   := $(shell git rev-parse --short HEAD)
+BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%S)
+LDFLAGS    := -X main.release=$(TAG) \
+              -X main.buildDate=$(BUILD_DATE) \
+              -X main.gitHash=$(GIT_HASH)
 
-generate:
+# ───── Go ─────
+generate:          ## go generate ./...
 	go generate ./...
 
-build: build-calendar build-scheduler build-sender
+build-loc:         ## собрать все бинарники
+	@for s in $(SERVICES); do \
+	    echo "→ build $$s"; \
+	    go build -v -o $(BIN)/$$s -ldflags '$(LDFLAGS)' ./cmd/$$s ; \
+	done
 
-build-calendar:
-	go build -v -o $(BIN)/calendar -ldflags "$(LDFLAGS)" ./cmd/calendar
+run-loc: build-loc ## запустить на хосте
+	@for s in $(SERVICES); do \
+	    $(BIN)/$$s -config ./configs/$$s\_config.toml & \
+	done ; wait
 
-build-scheduler:
-	go build -v -o $(BIN)/scheduler -ldflags "$(LDFLAGS)" ./cmd/scheduler
+version: build-loc ## показать версии
+	@for s in $(SERVICES); do $(BIN)/$$s version ; done
 
-build-sender:
-	go build -v -o $(BIN)/sender -ldflags "$(LDFLAGS)" ./cmd/sender
+# ───── Docker ─────
+build-img:         ## собрать образы сервисов + БД + Rabbit
+	@for s in $(SERVICES); do \
+	    docker build -t $$s:$(TAG) \
+	      --build-arg LDFLAGS='$(LDFLAGS)' \
+	      --build-arg SERVICE_NAME=$$s \
+	      -f build/Dockerfile . ; \
+	done
+	docker build -t db:$(TAG) -f build/Dockerfile.db .
+	docker build -t rb:$(TAG) -f build/Dockerfile.rb .
 
-run: build-calendar
-	$(BIN)/calendar -config ./configs/calendar_config.toml
-	$(BIN)/scheduler -config ./configs/scheduler_config.toml
-	$(BIN)/sender -config ./configs/sender_config.toml
-
-build-img:
-	docker build \
-		--build-arg=LDFLAGS="$(LDFLAGS)" \
-		-t $(DOCKER_IMG) \
-		-f build/Dockerfile .
-
-run-img: build-img
-	docker run $(DOCKER_IMG)
-
-version: build-calendar
-	$(BIN)/calendar version
+run: build-img     ## поднять docker-compose стек
+	docker compose -f deployments/docker-compose.yml up -d
 
 # Запуск PostgreSQL в Docker для тестов
 test-db-run:
@@ -41,13 +47,13 @@ test-db-run:
 		-e POSTGRES_USER=otus_user \
 		-e POSTGRES_PASSWORD=otus_password \
 		-e POSTGRES_DB=otus \
-		-p 54321:5432 \
+		-p 5432:5432 \
 		postgres:15
 
 # Ожидание пока БД будет готова
 wait-db:
 	@echo "Waiting for PostgreSQL to be ready..."
-	@until pg_isready -h localhost -p 54321 -U otus_user > /dev/null 2>&1; do \
+	@until pg_isready -h localhost -p 5432 -U otus_user > /dev/null 2>&1; do \
 		sleep 1; \
 	done
 
@@ -56,7 +62,7 @@ test-db-stop:
 	docker stop calendar-test-db || true
 
 test: test-db-run wait-db
-	TEST_DSN="host=localhost port=54321 user=otus_user password=otus_password dbname=otus sslmode=disable" go test -race ./internal/...
+	TEST_DSN="host=localhost port=5432 user=otus_user password=otus_password dbname=otus sslmode=disable" go test -race ./internal/...
 	$(MAKE) test-db-stop
 
 install-lint-deps:
@@ -66,4 +72,4 @@ lint: install-lint-deps
 	go mod download
 	golangci-lint run ./...
 
-.PHONY: generate build build-calendar build-scheduler build-sender run build-img run-img version test lint test-db-run wait-db test-db-stop
+.PHONY: generate build-loc run-loc build-img run version test lint test-db-run wait-db test-db-stop
