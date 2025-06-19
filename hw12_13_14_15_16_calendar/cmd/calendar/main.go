@@ -15,7 +15,7 @@ import (
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "configs/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "configs/calendar_config.toml", "Path to configuration file")
 }
 
 func main() {
@@ -27,14 +27,29 @@ func main() {
 
 	log.SetOutput(os.Stdout)
 	cfg := NewConfig()
-	childLoggers := setupLogger(cfg)
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	storage, err := setupStorage(cfg, childLoggers)
+	childLoggers, closer, err := setupLogger(cfg)
 	if err != nil {
 		return
 	}
+	if closer != nil {
+		defer closer.Close()
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		if err := closer.Close(); err != nil {
+			log.Printf("ошибка закрытия хранилища %s: %s", cfg.Storage.Mod, err)
+		} else {
+			log.Printf("хранилище %s успешно закрыто", cfg.Storage.Mod)
+		}
+	}()
+
 	calendar := app.New(childLoggers.app, storage)
 
 	wg := sync.WaitGroup{}

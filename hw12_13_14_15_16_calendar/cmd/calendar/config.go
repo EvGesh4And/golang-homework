@@ -13,6 +13,8 @@ type Config struct {
 }
 
 type LoggerConf struct {
+	Mod   string `toml:"mod"`
+	Path  string `toml:"path"`
 	Level string `toml:"level"`
 }
 

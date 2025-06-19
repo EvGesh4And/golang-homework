@@ -1,0 +1,18 @@
+[logger]
+mod = "console"
+path = "/var/log/scheduler.log"
+level = "debug"
+
+[storage]
+dsn = "host=db port=5432 user=otus_user password=otus_password dbname=otus sslmode=disable"
+
+[notifications]
+tick = "20s"
+event_ttl = "5m"
+
+[rabbitmq]
+uri = "amqp://guest:guest@rb:5672/"
+exchange = "events"
+exchange_type = "topic"
+routing_key = "event.#"
+reliable = true
