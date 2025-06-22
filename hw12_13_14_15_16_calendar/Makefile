@@ -51,7 +51,7 @@ test-db-run:
 # Ожидание пока БД будет готова
 wait-db:
 	@echo "Waiting for PostgreSQL to be ready..."
-	@until pg_isready -h localhost -p 5432 -U otus_user > /dev/null 2>&1; do \
+	@until pg_isready -h 0.0.0.0 -p 5432 -U otus_user > /dev/null 2>&1; do \
 		sleep 1; \
 	done
 
