@@ -11,7 +11,7 @@ LDFLAGS    := -X main.release=$(TAG) \
 
 # ───── Go ─────
 generate:          ## go generate ./...
-	go generate -x ./...
+	go generate ./...
 
 build-loc:         ## собрать все бинарники
 	@for s in $(SERVICES); do \
@@ -36,8 +36,11 @@ build-img:         ## собрать образы сервисов + БД + Rabb
 	      -f build/Dockerfile . ; \
 	done
 
-run: build-img     ## поднять docker-compose стек
+up: build-img     ## поднять docker-compose стек
 	docker compose -f deployments/docker-compose.yml up -d
+
+down:
+	docker compose -f deployments/docker-compose.yml down
 
 # Запуск PostgreSQL в Docker для тестов
 test-db-run:
@@ -70,4 +73,4 @@ lint: install-lint-deps
 	go mod download
 	golangci-lint run ./...
 
-.PHONY: generate build-loc run-loc build-img run version test lint test-db-run wait-db test-db-stop
+.PHONY: generate build-loc run-loc build-img up down version test lint test-db-run wait-db test-db-stop
