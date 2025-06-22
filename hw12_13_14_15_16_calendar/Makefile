@@ -8,9 +8,13 @@ BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%S)
 LDFLAGS    := -X main.release=$(TAG) \
               -X main.buildDate=$(BUILD_DATE) \
               -X main.gitHash=$(GIT_HASH)
+.tools:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.1
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0
+	touch $@
 
 # ───── Go ─────
-generate:          ## go generate ./...
+generate: .tools          ## go generate ./...
 	go generate ./...
 
 build-loc:         ## собрать все бинарники
@@ -35,8 +39,6 @@ build-img:         ## собрать образы сервисов + БД + Rabb
 	      --build-arg SERVICE_NAME=$$s \
 	      -f build/Dockerfile . ; \
 	done
-	docker build -t db:$(TAG) -f build/Dockerfile.db .
-	docker build -t rb:$(TAG) -f build/Dockerfile.rb .
 
 run: build-img     ## поднять docker-compose стек
 	docker compose -f deployments/docker-compose.yml up -d

@@ -2,11 +2,19 @@ version: "3.8"
 
 services:
   db:
-    image: db:develop
+    image: postgres:latest
     container_name: db
 
+    environment:
+      POSTGRES_USER:     otus_user
+      POSTGRES_PASSWORD: otus_password
+      POSTGRES_DB:       otus
+
+    ports:
+      - "5432:5432"
+
   rb:
-    image: rb:develop
+    image: rabbitmq:latest
     container_name: rb
 
   calendar:
