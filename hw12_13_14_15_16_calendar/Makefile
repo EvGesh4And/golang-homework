@@ -8,7 +8,13 @@ BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%S)
 LDFLAGS    := -X main.release=$(TAG) \
               -X main.buildDate=$(BUILD_DATE) \
               -X main.gitHash=$(GIT_HASH)
-.tools:
+
+PROTOC_VERSION = 27.1
+PROTOC_DIR     = /usr/local
+
+.tools:                            # цель-маркер
+	curl -sSL https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-linux-x86_64.zip -o /tmp/protoc.zip
+	unzip -o /tmp/protoc.zip -d $(PROTOC_DIR)
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.1
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.4.0
 	touch $@
