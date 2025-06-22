@@ -20,7 +20,6 @@ type RabbitProducer struct {
 }
 
 func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
-
 	const maxAttempts = 5
 	const retryDelay = 2 * time.Second
 

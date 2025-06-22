@@ -56,7 +56,7 @@ test-db-run:
 		-e POSTGRES_PASSWORD=otus_password \
 		-e POSTGRES_DB=otus \
 		-p 5432:5432 \
-		postgres:15
+		postgres:latest
 
 # Ожидание пока БД будет готова
 wait-db:
