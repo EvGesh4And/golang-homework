@@ -50,7 +50,7 @@ func main() {
 		}
 	}()
 
-	producer, err := producer.NewRabbitProducer(cfg.RabbitMQ, childLoggers.scheduler)
+	producer, err := producer.NewRabbitProducer(ctx, cfg.RabbitMQ, childLoggers.scheduler)
 	if err != nil {
 		return
 	}

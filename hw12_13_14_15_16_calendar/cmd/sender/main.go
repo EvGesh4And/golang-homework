@@ -36,7 +36,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	consumer, err := consumer.NewRabbitConsumer(cfg.RabbitMQ, childLoggers.sender)
+	consumer, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, childLoggers.sender)
 	if err != nil {
 		return
 	}
