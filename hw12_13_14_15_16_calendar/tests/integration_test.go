@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"os/exec"
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
@@ -109,8 +110,10 @@ var _ = Describe("Event API", func() {
 	Context("update event", func() {
 		It("update an event successfully", func() {
 			event := eventsGroup[0]
+			event.Start = time.Now().Add(10 * time.Second)
 			event.Title = "updated title"
 			event.Description = "updated description"
+			event.TimeBefore = 5 * time.Second
 
 			eventDTO := storage.ToDTO(event)
 
@@ -199,5 +202,14 @@ var _ = Describe("Event API", func() {
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
+	})
+})
+
+var _ = Describe("sender", func() {
+	It("prints message on event", func(ctx SpecContext) {
+		Eventually(func() string {
+			out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
+			return string(out)
+		}).WithTimeout(10 * time.Second).Should(ContainSubstring("test event 2"))
 	})
 })
