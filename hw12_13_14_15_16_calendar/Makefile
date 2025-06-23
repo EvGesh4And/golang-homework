@@ -54,7 +54,7 @@ lint: install-lint-deps
 
 # Запуск PostgreSQL в Docker для тестов
 test-dc-run:
-	docker-compose up -d
+	docker-compose -f ./deployments/docker-compose.yaml up -d
 
 # Ожидание пока БД будет готова
 wait-dc:
@@ -65,7 +65,7 @@ wait-dc:
 
 # Остановка контейнера с БД
 test-dc-stop:
-	docker-compose down -v || true
+	docker-compose -f ./deployments/docker-compose.yaml down -v || true
 
 integration-tests: test-dc-run wait-dc
 	go test -tags=integration -race ./test/...
