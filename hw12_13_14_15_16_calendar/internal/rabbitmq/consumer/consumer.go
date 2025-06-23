@@ -162,6 +162,7 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 			var notification storage.Notification
 			if err := json.Unmarshal(d.Body, &notification); err != nil {
 				c.logger.ErrorContext(ctx, "error during unmarshal", "error", err)
+				c.done <- nil
 				return err
 			}
 
