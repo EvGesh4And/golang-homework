@@ -203,9 +203,6 @@ var _ = Describe("Event API", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 	})
-})
-
-var _ = Describe("sender", func() {
 	It("prints message on event", func(ctx SpecContext) {
 		Eventually(func() string {
 			out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
