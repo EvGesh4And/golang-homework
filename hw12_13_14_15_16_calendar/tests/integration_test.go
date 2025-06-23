@@ -40,7 +40,22 @@ var _ = Describe("POST /event", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 		})
 
-		It("creates an event invalid event", func() {
+		It("creates an event invalid event: id", func() {
+			invalidEvent := storage.Event{}
+
+			eventDTO := storage.ToDTO(invalidEvent)
+
+			body, err := json.Marshal(eventDTO)
+			Expect(err).To(BeNil())
+
+			resp, err := http.Post("http://localhost:8888/event", "application/json", bytes.NewReader(body))
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		})
+
+		It("creates an event invalid event: start time", func() {
 			invalidEvent := storage.Event{
 				ID:          uuid.New(),
 				Title:       "",
