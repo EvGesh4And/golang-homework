@@ -3,7 +3,6 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -148,7 +147,9 @@ var _ = Describe("Event API", func() {
 				events = append(events, storage.FromDTO(eventDTO))
 			}
 
-			fmt.Println(events)
+			Expect(events).To(HaveLen(2))
+			Expect(events[0].Title).To(Equal("updated title"))
+			Expect(events[1].Title).To(Equal("test event 2"))
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
