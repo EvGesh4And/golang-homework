@@ -37,10 +37,10 @@ build-img:         ## собрать образы сервисов + БД + Rabb
 	done
 
 up: build-img     ## поднять docker-compose стек
-	docker compose -f deployments/docker-compose.yml up -d
+	docker compose -f deployments/docker-compose.yaml up -d
 
 down:
-	docker compose -f deployments/docker-compose.yml down
+	docker compose -f deployments/docker-compose.yaml down
 
 test:
 	go test -tags=integration -race ./internal/...
