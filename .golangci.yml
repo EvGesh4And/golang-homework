@@ -40,6 +40,8 @@ linters-settings:
           - github.com/google/uuid
           - github.com/stretchr/testify
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
+          - github.com/onsi/ginkgo/v2
+          - github.com/onsi/gomega
 issues:
   exclude-rules:
     - path: _test\.go
