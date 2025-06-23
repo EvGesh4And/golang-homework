@@ -16,10 +16,11 @@ import (
 )
 
 var _ = Describe("POST /event", func() {
+	eventID := uuid.New()
 	Context("create event", func() {
 		It("creates an event successfully", func() {
 			event := storage.Event{
-				ID:          uuid.New(),
+				ID:          eventID,
 				Title:       "test event",
 				Description: "test desc",
 				UserID:      uuid.New(),
@@ -83,6 +84,30 @@ var _ = Describe("POST /event", func() {
 			defer resp.Body.Close()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Context("update event", func() {
+		It("update an event successfully", func() {
+			event := storage.Event{
+				Title:       "test event update",
+				Description: "test desc",
+				UserID:      uuid.New(),
+				Start:       time.Now().Add(time.Hour),
+				End:         time.Now().Add(2 * time.Hour),
+				TimeBefore:  10 * time.Minute,
+			}
+
+			eventDTO := storage.ToDTO(event)
+
+			body, err := json.Marshal(eventDTO)
+			Expect(err).To(BeNil())
+
+			resp, err := http.Put("http://localhost:8888/event?id="+eventID.String(), "application/json", bytes.NewReader(body))
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+
+			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
 		})
 	})
 })
