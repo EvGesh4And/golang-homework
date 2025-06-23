@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -121,24 +122,22 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 				return nil
 			}
 
-			c.logger.InfoContext(ctx, "got message",
-				"delivery_tag", d.DeliveryTag,
-				"bytes", len(d.Body),
+			log.Printf(
+				"got %dB delivery: [%v] %q",
+				len(d.Body),
+				d.DeliveryTag,
+				d.Body,
 			)
+			c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
+			d.Ack(false)
 
-			var n storage.Notification
-			if err := json.Unmarshal(d.Body, &n); err != nil {
-				c.logger.ErrorContext(ctx, "unmarshal failed", "error", err)
-				_ = d.Nack(false, false) // не пере-queue-им битое сообщение
-				continue
+			var notification storage.Notification
+			if err := json.Unmarshal(d.Body, &notification); err != nil {
+				c.logger.ErrorContext(ctx, "error during unmarshal", "error", err)
+				return err
 			}
 
-			// ... обработка уведомления ...
-			// (здесь могла бы быть ваша бизнес-логика)
-
-			if err := d.Ack(false); err != nil {
-				c.logger.ErrorContext(ctx, "ack failed", "error", err)
-			}
+			c.logger.InfoContext(ctx, "notification event", "notification", notification)
 		}
 	}
 }

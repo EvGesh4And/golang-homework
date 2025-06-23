@@ -42,7 +42,8 @@ func main() {
 
 	cons, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, child.sender)
 	if err != nil {
-		log.Fatalf("cannot create consumer: %v", err)
+		log.Printf("cannot create consumer: %v", err)
+		return
 	}
 
 	// ---------- запуск consumer в отдельной горутине ----------
