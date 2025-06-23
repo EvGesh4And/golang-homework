@@ -64,6 +64,6 @@ test-dc-stop:
 integration-tests: test-dc-run
 	@set -e; \
 	trap '$(MAKE) test-dc-stop' EXIT; \
-	CGO_ENABLED=1 go test -tags=integration -race ./tests/...
+	go test -tags=integration ./tests/...
 
 .PHONY: generate build-loc run-loc build-img up down version test lint integration-tests
