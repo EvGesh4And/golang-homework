@@ -27,7 +27,7 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 		conn:    nil,
 		channel: nil,
 		tag:     cfg.ConsumerTag,
-		done:    make(chan error),
+		done:    make(chan error, 1),
 		logger:  logger,
 	}
 
