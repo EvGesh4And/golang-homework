@@ -3,6 +3,7 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -119,6 +120,24 @@ var _ = Describe("POST /event", func() {
 			defer resp.Body.Close()
 
 			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+		})
+	})
+
+	Context("get events", func() {
+		It("get an event successfully", func() {
+			req, _ := http.NewRequest(http.MethodGet,
+				"http://localhost:8888/event/day?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+
+			var events []storage.EventDTO
+			err = json.NewDecoder(resp.Body).Decode(&events)
+			Expect(err).To(BeNil())
+
+			fmt.Println(events)
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
 	})
 })
