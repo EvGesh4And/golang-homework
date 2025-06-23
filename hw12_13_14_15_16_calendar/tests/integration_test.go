@@ -60,7 +60,7 @@ var _ = Describe("POST /event", func() {
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
-			Expect(resp.StatusCode).To(Equal(ttp.StatusBadRequest))
+			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 	})
 })
