@@ -62,7 +62,7 @@ test-dc-stop:
 	docker compose -f ./deployments/docker-compose.yaml down -v || true
 
 integration-tests: test-dc-run
-	CGO_ENABLED=1 go test -tags=integration -race ./test/...
+	CGO_ENABLED=1 go test -tags=integration -race ./tests/...
 	$(MAKE) test-dc-stop
 
 .PHONY: generate build-loc run-loc build-img up down version test lint integration-tests
