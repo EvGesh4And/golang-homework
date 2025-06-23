@@ -42,29 +42,8 @@ up: build-img     ## поднять docker-compose стек
 down:
 	docker compose -f deployments/docker-compose.yml down
 
-# Запуск PostgreSQL в Docker для тестов
-test-db-run:
-	docker run -d --rm --name calendar-test-db \
-		-e POSTGRES_USER=otus_user \
-		-e POSTGRES_PASSWORD=otus_password \
-		-e POSTGRES_DB=otus \
-		-p 5432:5432 \
-		postgres:latest
-
-# Ожидание пока БД будет готова
-wait-db:
-	@echo "Waiting for PostgreSQL to be ready..."
-	@until pg_isready -h localhost -p 5432 -U otus_user > /dev/null 2>&1; do \
-		sleep 1; \
-	done
-
-# Остановка контейнера с БД
-test-db-stop:
-	docker stop calendar-test-db || true
-
-test: test-db-run wait-db
-	TEST_DSN="host=localhost port=5432 user=otus_user password=otus_password dbname=otus sslmode=disable" go test -race ./internal/...
-	$(MAKE) test-db-stop
+test:
+	go test -tags=integration -race ./internal/...
 
 install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.64.8
@@ -73,4 +52,23 @@ lint: install-lint-deps
 	go mod download
 	golangci-lint run ./...
 
-.PHONY: generate build-loc run-loc build-img up down version test lint test-db-run wait-db test-db-stop
+# Запуск PostgreSQL в Docker для тестов
+test-dc-run:
+	docker-compose up -d
+
+# Ожидание пока БД будет готова
+wait-dc:
+	@echo "Waiting for PostgreSQL to be ready..."
+	@until pg_isready -h localhost -p 5432 -U otus_user > /dev/null 2>&1; do \
+		sleep 1; \
+	done
+
+# Остановка контейнера с БД
+test-dc-stop:
+	docker-compose down -v || true
+
+integration-tests: test-dc-run wait-dc
+	go test -tags=integration -race ./test/...
+	$(MAKE) test-dc-stop
+
+.PHONY: generate build-loc run-loc build-img up down version test lint integration-tests

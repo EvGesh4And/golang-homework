@@ -1,23 +1,58 @@
-package sqlstorage
+//go:build integration
+// +build integration
+
+package sqlstorage_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	sqlstorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/sql"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-var testDSN = os.Getenv("TEST_DSN")
+func setupStorage(t *testing.T) *sqlstorage.Storage {
 
-func setupStorage(t *testing.T) *Storage {
+	if testing.Short() {
+		t.Skip("-short: пропускаем интеграцию")
+	}
+
 	t.Helper()
 
 	logger := logger.New("info", os.Stdout)
-	st := New(logger, testDSN)
+
+	ctx := context.Background()
+	pg, err := testcontainers.GenericContainer(ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: "postgres:16-alpine",
+				Env: map[string]string{
+					"POSTGRES_USER":     "otus_user",
+					"POSTGRES_PASSWORD": "otus_password",
+					"POSTGRES_DB":       "otus",
+				},
+				ExposedPorts: []string{"5432/tcp"},
+				WaitingFor:   wait.ForListeningPort("5432/tcp"),
+			},
+			Started: true,
+		})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = pg.Terminate(ctx) })
+
+	host, _ := pg.Host(ctx)
+	port, _ := pg.MappedPort(ctx, "5432")
+	dsn := fmt.Sprintf("host=%s port=%s user=otus_user password=otus_password dbname=otus sslmode=disable",
+		host, port.Port())
+	fmt.Println(dsn)
+	st := sqlstorage.New(logger, dsn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
