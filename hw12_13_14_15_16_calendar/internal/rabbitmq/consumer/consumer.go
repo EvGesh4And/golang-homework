@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -145,25 +144,15 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 }
 
 func (c *RabbitConsumer) Shutdown() error {
-	t0 := time.Now()
-
-	log.Print("SHUT: cancel()…")
+	// останавливаем получение новых сообщений
 	if err := c.channel.Cancel(c.tag, true); err != nil {
 		return fmt.Errorf("consumer cancel failed: %w", err)
 	}
-	log.Printf("SHUT: cancel OK  [%v]", time.Since(t0))
-	t0 = time.Now()
 
-	log.Print("SHUT: conn.Close()…")
 	if err := c.conn.Close(); err != nil {
 		return fmt.Errorf("AMQP connection close error: %w", err)
 	}
-	log.Printf("SHUT: conn.Close OK [%v]", time.Since(t0))
-	t0 = time.Now()
 
-	log.Print("SHUT: wait <-done…")
-	<-c.done
-	log.Printf("SHUT: <-done OK       [%v]", time.Since(t0))
-
+	<-c.done // ждём завершения Handle
 	return nil
 }

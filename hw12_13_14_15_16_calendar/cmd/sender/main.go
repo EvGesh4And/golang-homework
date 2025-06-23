@@ -53,7 +53,7 @@ func main() {
 	}()
 
 	<-ctx.Done() // ждём SIGINT/SIGTERM
-	log.Print("SHUT: <-done OK")
+
 	// ---------- даём немного времени на корректное закрытие ----------
 	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
