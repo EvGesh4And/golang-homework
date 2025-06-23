@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -92,7 +93,6 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 	return c, nil
 }
 
-// Handle запускается в отдельной горутине и читает сообщения
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
 	ctx = logger.WithLogMethod(ctx, "Handle")
 	c.logger.InfoContext(ctx, "start consuming", "consumer_tag", c.tag)
@@ -145,15 +145,25 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 }
 
 func (c *RabbitConsumer) Shutdown() error {
-	// останавливаем получение новых сообщений
+	t0 := time.Now()
+
+	log.Print("SHUT: cancel()…")
 	if err := c.channel.Cancel(c.tag, true); err != nil {
 		return fmt.Errorf("consumer cancel failed: %w", err)
 	}
+	log.Printf("SHUT: cancel OK  [%v]", time.Since(t0))
+	t0 = time.Now()
 
+	log.Print("SHUT: conn.Close()…")
 	if err := c.conn.Close(); err != nil {
 		return fmt.Errorf("AMQP connection close error: %w", err)
 	}
+	log.Printf("SHUT: conn.Close OK [%v]", time.Since(t0))
+	t0 = time.Now()
 
-	<-c.done // ждём завершения Handle
+	log.Print("SHUT: wait <-done…")
+	<-c.done
+	log.Printf("SHUT: <-done OK       [%v]", time.Since(t0))
+
 	return nil
 }
