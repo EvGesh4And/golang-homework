@@ -13,34 +13,45 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("POST /event", func() {
-	eventID := uuid.New()
+var _ = Describe("Event API", func() {
+	events := []storage.Event{
+		{
+			ID:          uuid.New(),
+			Title:       "test event",
+			Description: "test desc",
+			UserID:      uuid.New(),
+			Start:       time.Now().Add(time.Hour),
+			End:         time.Now().Add(2 * time.Hour),
+			TimeBefore:  10 * time.Minute,
+		},
+		{
+			ID:          uuid.New(),
+			Title:       "test event 2",
+			Description: "test desc 2",
+			UserID:      uuid.New(),
+			Start:       time.Now().Add(3 * time.Hour),
+			End:         time.Now().Add(4 * time.Hour),
+			TimeBefore:  15 * time.Minute,
+		},
+	}
 	Context("create event", func() {
 		It("creates an event successfully", func() {
-			event := storage.Event{
-				ID:          eventID,
-				Title:       "test event",
-				Description: "test desc",
-				UserID:      uuid.New(),
-				Start:       time.Now().Add(time.Hour),
-				End:         time.Now().Add(2 * time.Hour),
-				TimeBefore:  10 * time.Minute,
+			for _, event := range events {
+				eventDTO := storage.ToDTO(event)
+
+				body, err := json.Marshal(eventDTO)
+				Expect(err).To(BeNil())
+
+				req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+
+				resp, err := http.DefaultClient.Do(req)
+
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
+
+				Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 			}
-
-			eventDTO := storage.ToDTO(event)
-
-			body, err := json.Marshal(eventDTO)
-			Expect(err).To(BeNil())
-
-			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := http.DefaultClient.Do(req)
-
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 		})
 
 		It("creates an event invalid event: id", func() {
@@ -98,21 +109,17 @@ var _ = Describe("POST /event", func() {
 
 	Context("update event", func() {
 		It("update an event successfully", func() {
-			event := storage.Event{
-				Title:       "test event update",
-				Description: "test desc",
-				UserID:      uuid.New(),
-				Start:       time.Now().Add(time.Hour),
-				End:         time.Now().Add(2 * time.Hour),
-				TimeBefore:  10 * time.Minute,
-			}
+			event := events[0]
+			event.Title = "updated title"
+			event.Description = "updated description"
 
 			eventDTO := storage.ToDTO(event)
 
 			body, err := json.Marshal(eventDTO)
 			Expect(err).To(BeNil())
 
-			req, _ := http.NewRequest(http.MethodPut, "http://localhost:8888/event?id="+eventID.String(), bytes.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPut,
+				"http://localhost:8888/event?id="+events[0].ID.String(), bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := http.DefaultClient.Do(req)
@@ -131,9 +138,15 @@ var _ = Describe("POST /event", func() {
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
-			var events []storage.EventDTO
-			err = json.NewDecoder(resp.Body).Decode(&events)
+			var eventsDTO []storage.EventDTO
+			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
 			Expect(err).To(BeNil())
+
+			var events []storage.Event
+
+			for _, eventDTO := range eventsDTO {
+				events = append(events, storage.FromDTO(eventDTO))
+			}
 
 			fmt.Println(events)
 
