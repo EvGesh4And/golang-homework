@@ -210,6 +210,6 @@ var _ = Describe("sender", func() {
 		Eventually(func() string {
 			out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
 			return string(out)
-		}).WithTimeout(10 * time.Second).Should(ContainSubstring("test event 2"))
+		}).WithTimeout(10 * time.Second).Should(ContainSubstring("updated title"))
 	})
 })
