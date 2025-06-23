@@ -42,11 +42,11 @@ var _ = Describe("POST /event", func() {
 
 		It("creates an event invalid event", func() {
 			invalidEvent := storage.Event{
-				ID:          "trash",
+				ID:          uuid.New(),
 				Title:       "",
 				Description: "test desc",
 				UserID:      uuid.New(),
-				Start:       time.Now().Add(time.Hour),
+				Start:       time.Now().Add(-time.Hour),
 				End:         time.Now().Add(2 * time.Hour),
 				TimeBefore:  10 * time.Minute,
 			}
