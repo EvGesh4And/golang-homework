@@ -41,7 +41,14 @@ var _ = Describe("POST /event", func() {
 		})
 
 		It("creates an event invalid event: id", func() {
-			invalidEvent := storage.Event{}
+			invalidEvent := storage.Event{
+				Title:       "test event",
+				Description: "test desc",
+				UserID:      uuid.New(),
+				Start:       time.Now().Add(time.Hour),
+				End:         time.Now().Add(2 * time.Hour),
+				TimeBefore:  10 * time.Minute,
+			}
 
 			eventDTO := storage.ToDTO(invalidEvent)
 
