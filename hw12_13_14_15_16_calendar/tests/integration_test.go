@@ -1,3 +1,5 @@
+//nolint:gci
+//revive:disable:dot-imports
 package integration_test
 
 import (
@@ -9,6 +11,7 @@ import (
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 	"github.com/google/uuid"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
