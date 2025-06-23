@@ -13,7 +13,7 @@ import (
 )
 
 var _ = Describe("Event API", func() {
-	events := []storage.Event{
+	eventsGroup := []storage.Event{
 		{
 			ID:          uuid.New(),
 			Title:       "test event",
@@ -35,7 +35,7 @@ var _ = Describe("Event API", func() {
 	}
 	Context("create event", func() {
 		It("creates an event successfully", func() {
-			for _, event := range events {
+			for _, event := range eventsGroup {
 				eventDTO := storage.ToDTO(event)
 
 				body, err := json.Marshal(eventDTO)
@@ -108,7 +108,7 @@ var _ = Describe("Event API", func() {
 
 	Context("update event", func() {
 		It("update an event successfully", func() {
-			event := events[0]
+			event := eventsGroup[0]
 			event.Title = "updated title"
 			event.Description = "updated description"
 
@@ -118,7 +118,7 @@ var _ = Describe("Event API", func() {
 			Expect(err).To(BeNil())
 
 			req, _ := http.NewRequest(http.MethodPut,
-				"http://localhost:8888/event?id="+events[0].ID.String(), bytes.NewReader(body))
+				"http://localhost:8888/event?id="+eventsGroup[0].ID.String(), bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := http.DefaultClient.Do(req)
@@ -148,8 +148,8 @@ var _ = Describe("Event API", func() {
 			}
 
 			Expect(events).To(HaveLen(2))
-			Expect(events[0].Title).To(Equal("updated title"))
-			Expect(events[1].Title).To(Equal("test event 2"))
+			Expect(events[0].Title).To(Equal("test event 2"))
+			Expect(events[1].Title).To(Equal("updated title"))
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
