@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Event API", func() {
+var _ = Describe("Calendar", func() {
 	eventsGroup := []storage.Event{
 		{
 			ID:          uuid.New(),
@@ -34,10 +34,38 @@ var _ = Describe("Event API", func() {
 			TimeBefore:  15 * time.Minute,
 		},
 	}
-	Context("create event", func() {
-		It("creates an event successfully", func() {
-			for _, event := range eventsGroup {
-				eventDTO := storage.ToDTO(event)
+	Context("Calendar: Event API", func() {
+		Context("create event", func() {
+			It("creates an event successfully", func() {
+				for _, event := range eventsGroup {
+					eventDTO := storage.ToDTO(event)
+
+					body, err := json.Marshal(eventDTO)
+					Expect(err).To(BeNil())
+
+					req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+					req.Header.Set("Content-Type", "application/json")
+
+					resp, err := http.DefaultClient.Do(req)
+
+					Expect(err).To(BeNil())
+					defer resp.Body.Close()
+
+					Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+				}
+			})
+
+			It("creates an event invalid event: id", func() {
+				invalidEvent := storage.Event{
+					Title:       "test event",
+					Description: "test desc",
+					UserID:      uuid.New(),
+					Start:       time.Now().Add(time.Hour),
+					End:         time.Now().Add(2 * time.Hour),
+					TimeBefore:  10 * time.Minute,
+				}
+
+				eventDTO := storage.ToDTO(invalidEvent)
 
 				body, err := json.Marshal(eventDTO)
 				Expect(err).To(BeNil())
@@ -50,163 +78,140 @@ var _ = Describe("Event API", func() {
 				Expect(err).To(BeNil())
 				defer resp.Body.Close()
 
-				Expect(resp.StatusCode).To(Equal(http.StatusCreated))
-			}
+				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			})
+
+			It("creates an event invalid event: start time", func() {
+				invalidEvent := storage.Event{
+					ID:          uuid.New(),
+					Title:       "",
+					Description: "test desc",
+					UserID:      uuid.New(),
+					Start:       time.Now().Add(-time.Hour),
+					End:         time.Now().Add(2 * time.Hour),
+					TimeBefore:  10 * time.Minute,
+				}
+
+				eventDTO := storage.ToDTO(invalidEvent)
+
+				body, err := json.Marshal(eventDTO)
+				Expect(err).To(BeNil())
+
+				req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
+
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
+
+				Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			})
 		})
 
-		It("creates an event invalid event: id", func() {
-			invalidEvent := storage.Event{
-				Title:       "test event",
-				Description: "test desc",
-				UserID:      uuid.New(),
-				Start:       time.Now().Add(time.Hour),
-				End:         time.Now().Add(2 * time.Hour),
-				TimeBefore:  10 * time.Minute,
-			}
+		Context("update event", func() {
+			It("update an event successfully", func() {
+				event := eventsGroup[0]
+				event.Start = time.Now().Add(10 * time.Second)
+				event.Title = "updated title"
+				event.Description = "updated description"
+				event.TimeBefore = 5 * time.Second
 
-			eventDTO := storage.ToDTO(invalidEvent)
+				eventDTO := storage.ToDTO(event)
 
-			body, err := json.Marshal(eventDTO)
-			Expect(err).To(BeNil())
+				body, err := json.Marshal(eventDTO)
+				Expect(err).To(BeNil())
 
-			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
+				req, _ := http.NewRequest(http.MethodPut,
+					"http://localhost:8888/event?id="+eventsGroup[0].ID.String(), bytes.NewReader(body))
+				req.Header.Set("Content-Type", "application/json")
 
-			resp, err := http.DefaultClient.Do(req)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
 
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
-
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+				Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
+			})
 		})
 
-		It("creates an event invalid event: start time", func() {
-			invalidEvent := storage.Event{
-				ID:          uuid.New(),
-				Title:       "",
-				Description: "test desc",
-				UserID:      uuid.New(),
-				Start:       time.Now().Add(-time.Hour),
-				End:         time.Now().Add(2 * time.Hour),
-				TimeBefore:  10 * time.Minute,
-			}
+		Context("get events", func() {
+			It("get an event day successfully", func() {
+				req, _ := http.NewRequest(http.MethodGet,
+					"http://localhost:8888/event/day?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
 
-			eventDTO := storage.ToDTO(invalidEvent)
+				var eventsDTO []storage.EventDTO
+				err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
+				Expect(err).To(BeNil())
 
-			body, err := json.Marshal(eventDTO)
-			Expect(err).To(BeNil())
+				var events []storage.Event
 
-			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
+				for _, eventDTO := range eventsDTO {
+					events = append(events, storage.FromDTO(eventDTO))
+				}
 
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
+				Expect(events).To(HaveLen(2))
+				Expect(events[0].Title).To(Equal("test event 2"))
+				Expect(events[1].Title).To(Equal("updated title"))
 
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-		})
-	})
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
+			It("get an event month successfully", func() {
+				req, _ := http.NewRequest(http.MethodGet,
+					"http://localhost:8888/event/month?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
 
-	Context("update event", func() {
-		It("update an event successfully", func() {
-			event := eventsGroup[0]
-			event.Start = time.Now().Add(10 * time.Second)
-			event.Title = "updated title"
-			event.Description = "updated description"
-			event.TimeBefore = 5 * time.Second
+				var eventsDTO []storage.EventDTO
+				err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
+				Expect(err).To(BeNil())
 
-			eventDTO := storage.ToDTO(event)
+				var events []storage.Event
 
-			body, err := json.Marshal(eventDTO)
-			Expect(err).To(BeNil())
+				for _, eventDTO := range eventsDTO {
+					events = append(events, storage.FromDTO(eventDTO))
+				}
 
-			req, _ := http.NewRequest(http.MethodPut,
-				"http://localhost:8888/event?id="+eventsGroup[0].ID.String(), bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
+				Expect(events).To(HaveLen(2))
+				Expect(events[0].Title).To(Equal("test event 2"))
+				Expect(events[1].Title).To(Equal("updated title"))
 
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
+			It("get an event week successfully", func() {
+				req, _ := http.NewRequest(http.MethodGet,
+					"http://localhost:8888/event/week?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+				resp, err := http.DefaultClient.Do(req)
+				Expect(err).To(BeNil())
+				defer resp.Body.Close()
 
-			Expect(resp.StatusCode).To(Equal(http.StatusNoContent))
-		})
-	})
+				var eventsDTO []storage.EventDTO
+				err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
+				Expect(err).To(BeNil())
 
-	Context("get events", func() {
-		It("get an event day successfully", func() {
-			req, _ := http.NewRequest(http.MethodGet,
-				"http://localhost:8888/event/day?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
+				var events []storage.Event
 
-			var eventsDTO []storage.EventDTO
-			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
-			Expect(err).To(BeNil())
+				for _, eventDTO := range eventsDTO {
+					events = append(events, storage.FromDTO(eventDTO))
+				}
 
-			var events []storage.Event
+				Expect(events).To(HaveLen(2))
+				Expect(events[0].Title).To(Equal("test event 2"))
+				Expect(events[1].Title).To(Equal("updated title"))
 
-			for _, eventDTO := range eventsDTO {
-				events = append(events, storage.FromDTO(eventDTO))
-			}
-
-			Expect(events).To(HaveLen(2))
-			Expect(events[0].Title).To(Equal("test event 2"))
-			Expect(events[1].Title).To(Equal("updated title"))
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		})
-		It("get an event month successfully", func() {
-			req, _ := http.NewRequest(http.MethodGet,
-				"http://localhost:8888/event/month?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
-
-			var eventsDTO []storage.EventDTO
-			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
-			Expect(err).To(BeNil())
-
-			var events []storage.Event
-
-			for _, eventDTO := range eventsDTO {
-				events = append(events, storage.FromDTO(eventDTO))
-			}
-
-			Expect(events).To(HaveLen(2))
-			Expect(events[0].Title).To(Equal("test event 2"))
-			Expect(events[1].Title).To(Equal("updated title"))
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-		})
-		It("get an event week successfully", func() {
-			req, _ := http.NewRequest(http.MethodGet,
-				"http://localhost:8888/event/week?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
-			resp, err := http.DefaultClient.Do(req)
-			Expect(err).To(BeNil())
-			defer resp.Body.Close()
-
-			var eventsDTO []storage.EventDTO
-			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
-			Expect(err).To(BeNil())
-
-			var events []storage.Event
-
-			for _, eventDTO := range eventsDTO {
-				events = append(events, storage.FromDTO(eventDTO))
-			}
-
-			Expect(events).To(HaveLen(2))
-			Expect(events[0].Title).To(Equal("test event 2"))
-			Expect(events[1].Title).To(Equal("updated title"))
-
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+				Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			})
 		})
 	})
-	It("prints message on event", func(ctx SpecContext) {
-		Eventually(func() string {
-			out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
-			return string(out)
-		}).WithTimeout(10 * time.Second).Should(ContainSubstring("updated title"))
+
+	Context("Scheduler and Sender", func() {
+		It("prints message on notification in console", func(ctx SpecContext) {
+			Eventually(func() string {
+				out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
+				return string(out)
+			}).WithTimeout(10 * time.Second).Should(ContainSubstring("updated title"))
+		})
 	})
 })
