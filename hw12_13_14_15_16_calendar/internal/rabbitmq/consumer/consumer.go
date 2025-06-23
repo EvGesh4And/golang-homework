@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -22,97 +21,131 @@ type RabbitConsumer struct {
 	logger  *slog.Logger
 }
 
-func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logger) (*RabbitConsumer, error) {
+func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
 	c := &RabbitConsumer{
-		conn:    nil,
-		channel: nil,
-		tag:     cfg.ConsumerTag,
-		done:    make(chan error, 1),
-		logger:  logger,
+		tag:    cfg.ConsumerTag,
+		done:   make(chan error, 1),
+		logger: lg,
 	}
 
-	const maxAttempts = 5
-	const retryDelay = 2 * time.Second
+	const (
+		maxAttempts = 5
+		retryDelay  = 2 * time.Second
+	)
 
 	var err error
-
 	for i := 1; i <= maxAttempts; i++ {
-		logger.Info("Попытка подключения к RabbitMQ", slog.String("uri", cfg.URI), slog.Int("attempt", i))
+		lg.Info("connecting to RabbitMQ",
+			slog.String("uri", cfg.URI),
+			slog.Int("attempt", i),
+		)
+
 		c.conn, err = amqp.Dial(cfg.URI)
 		if err == nil {
 			break
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к RabbitMQ: %v", i, err)
-
+		lg.Error("RabbitMQ dial failed", "error", err)
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+			return nil, fmt.Errorf("dial cancelled: %w", ctx.Err())
 		case <-time.After(retryDelay):
-			// Пауза перед следующей попыткой
 		}
 	}
-
 	if err != nil {
-		return nil, fmt.Errorf("не удалось подключиться к RabbitMQ после %d попыток: %w", maxAttempts, err)
+		return nil, fmt.Errorf("unable to connect after %d attempts: %w", maxAttempts, err)
 	}
 
+	// отслеживаем закрытие подключения брокером
 	go func() {
-		fmt.Printf("closing: %s", <-c.conn.NotifyClose(make(chan *amqp.Error)))
+		c.logger.Warn("connection closed", "error", <-c.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	log.Printf("got Connection, getting Channel")
+	// канал
 	c.channel, err = c.conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("channel: %w", err)
 	}
 
-	log.Printf("got Channel, declaring Exchange (%q)", cfg.Exchange)
+	// exchange + queue + bind
 	if err = c.channel.ExchangeDeclare(
-		cfg.Exchange,     // name of the exchange
-		cfg.ExchangeType, // type
-		true,             // durable
-		false,            // delete when complete
-		false,            // internal
-		false,            // noWait
-		nil,              // arguments
+		cfg.Exchange, cfg.ExchangeType,
+		true, false, false, false, nil,
 	); err != nil {
-		return nil, fmt.Errorf("exchange Declare: %w", err)
+		return nil, fmt.Errorf("exchange declare: %w", err)
 	}
 
-	log.Printf("declared Exchange, declaring Queue %q", cfg.Queue)
-	queue, err := c.channel.QueueDeclare(
-		cfg.Queue, // name of the queue
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // noWait
-		nil,       // arguments
+	q, err := c.channel.QueueDeclare(
+		cfg.Queue, true, false, false, false, nil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("queue Declare: %w", err)
+		return nil, fmt.Errorf("queue declare: %w", err)
 	}
-
-	c.queue = queue
-
-	log.Printf("declared Queue (%q %d messages, %d consumers), binding to Exchange (key %q)",
-		queue.Name, queue.Messages, queue.Consumers, cfg.BindingKey)
+	c.queue = q
 
 	if err = c.channel.QueueBind(
-		queue.Name,     // name of the queue
-		cfg.BindingKey, // bindingKey
-		cfg.Exchange,   // sourceExchange
-		false,          // noWait
-		nil,            // arguments
+		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,
 	); err != nil {
-		return nil, fmt.Errorf("queue Bind: %w", err)
+		return nil, fmt.Errorf("queue bind: %w", err)
 	}
 
 	return c, nil
 }
 
+// Handle запускается в отдельной горутине и читает сообщения
+func (c *RabbitConsumer) Handle(ctx context.Context) error {
+	ctx = logger.WithLogMethod(ctx, "Handle")
+	c.logger.InfoContext(ctx, "start consuming", "consumer_tag", c.tag)
+
+	deliveries, err := c.channel.Consume(
+		c.queue.Name, c.tag,
+		false, /* auto-ack — нет */
+		false, false, false, nil,
+	)
+	if err != nil {
+		return fmt.Errorf("queue consume: %w", err)
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			// контекст отменён, выходим
+			c.logger.InfoContext(ctx, "context cancelled")
+			close(c.done)
+			return ctx.Err()
+
+		case d, ok := <-deliveries:
+			if !ok {
+				// канал закрыт брокером
+				c.logger.InfoContext(ctx, "deliveries channel closed")
+				close(c.done)
+				return nil
+			}
+
+			c.logger.InfoContext(ctx, "got message",
+				"delivery_tag", d.DeliveryTag,
+				"bytes", len(d.Body),
+			)
+
+			var n storage.Notification
+			if err := json.Unmarshal(d.Body, &n); err != nil {
+				c.logger.ErrorContext(ctx, "unmarshal failed", "error", err)
+				_ = d.Nack(false, false) // не пере-queue-им битое сообщение
+				continue
+			}
+
+			// ... обработка уведомления ...
+			// (здесь могла бы быть ваша бизнес-логика)
+
+			if err := d.Ack(false); err != nil {
+				c.logger.ErrorContext(ctx, "ack failed", "error", err)
+			}
+		}
+	}
+}
+
 func (c *RabbitConsumer) Shutdown() error {
-	// will close() the deliveries channel
+	// останавливаем получение новых сообщений
 	if err := c.channel.Cancel(c.tag, true); err != nil {
 		return fmt.Errorf("consumer cancel failed: %w", err)
 	}
@@ -121,56 +154,6 @@ func (c *RabbitConsumer) Shutdown() error {
 		return fmt.Errorf("AMQP connection close error: %w", err)
 	}
 
-	defer log.Printf("AMQP shutdown OK")
-
-	// wait for handle() to exit
-	return <-c.done
-}
-
-func (c *RabbitConsumer) Handle(ctx context.Context) error {
-	ctx = logger.WithLogMethod(ctx, "Handle")
-
-	c.logger.InfoContext(ctx, "queue bound to Exchange, starting Consume", "consumer_tag", c.tag)
-	deliveries, err := c.channel.Consume(
-		c.queue.Name, // name
-		c.tag,        // consumerTag,
-		false,        // noAck
-		false,        // exclusive
-		false,        // noLocal
-		false,        // noWait
-		nil,          // arguments
-	)
-	if err != nil {
-		return fmt.Errorf("queue Consume: %w", err)
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			log.Print("context canceled")
-			c.done <- nil
-			return ctx.Err()
-		case d := <-deliveries:
-			log.Printf(
-				"got %dB delivery: [%v] %q",
-				len(d.Body),
-				d.DeliveryTag,
-				d.Body,
-			)
-			c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
-			d.Ack(false)
-
-			var notification storage.Notification
-			if err := json.Unmarshal(d.Body, &notification); err != nil {
-				c.logger.ErrorContext(ctx, "error during unmarshal", "error", err)
-				c.done <- nil
-				return err
-			}
-
-			c.logger.InfoContext(ctx, "notification event", "notification", notification)
-		}
-	}
-	// log.Printf("handle: deliveries channel closed")
-	// c.done <- nil
-
-	// return nil
+	<-c.done // ждём завершения Handle
+	return nil
 }
