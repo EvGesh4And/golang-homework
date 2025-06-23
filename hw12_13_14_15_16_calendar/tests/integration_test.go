@@ -27,7 +27,9 @@ var _ = Describe("POST /event", func() {
 			TimeBefore:  10 * time.Minute,
 		}
 
-		body, err := json.Marshal(event)
+		eventDTO := storage.ToDTO(event)
+
+		body, err := json.Marshal(eventDTO)
 		Expect(err).To(BeNil())
 
 		resp, err := http.Post("http://localhost:8888/event", "application/json", bytes.NewReader(body))
