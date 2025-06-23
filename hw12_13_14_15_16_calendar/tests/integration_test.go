@@ -130,9 +130,55 @@ var _ = Describe("Event API", func() {
 	})
 
 	Context("get events", func() {
-		It("get an event successfully", func() {
+		It("get an event day successfully", func() {
 			req, _ := http.NewRequest(http.MethodGet,
 				"http://localhost:8888/event/day?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+
+			var eventsDTO []storage.EventDTO
+			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
+			Expect(err).To(BeNil())
+
+			var events []storage.Event
+
+			for _, eventDTO := range eventsDTO {
+				events = append(events, storage.FromDTO(eventDTO))
+			}
+
+			Expect(events).To(HaveLen(2))
+			Expect(events[0].Title).To(Equal("test event 2"))
+			Expect(events[1].Title).To(Equal("updated title"))
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+		It("get an event month successfully", func() {
+			req, _ := http.NewRequest(http.MethodGet,
+				"http://localhost:8888/event/month?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+
+			var eventsDTO []storage.EventDTO
+			err = json.NewDecoder(resp.Body).Decode(&eventsDTO)
+			Expect(err).To(BeNil())
+
+			var events []storage.Event
+
+			for _, eventDTO := range eventsDTO {
+				events = append(events, storage.FromDTO(eventDTO))
+			}
+
+			Expect(events).To(HaveLen(2))
+			Expect(events[0].Title).To(Equal("test event 2"))
+			Expect(events[1].Title).To(Equal("updated title"))
+
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		})
+		It("get an event week successfully", func() {
+			req, _ := http.NewRequest(http.MethodGet,
+				"http://localhost:8888/event/week?start="+time.Now().Add(-2*time.Hour).Format(time.RFC3339), nil)
 			resp, err := http.DefaultClient.Do(req)
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
