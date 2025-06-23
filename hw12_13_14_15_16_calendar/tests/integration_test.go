@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package integration_test
 
 import (
@@ -34,7 +31,11 @@ var _ = Describe("POST /event", func() {
 			body, err := json.Marshal(eventDTO)
 			Expect(err).To(BeNil())
 
-			resp, err := http.Post("http://localhost:8888/event", "application/json", bytes.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := http.DefaultClient.Do(req)
+
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
@@ -56,7 +57,11 @@ var _ = Describe("POST /event", func() {
 			body, err := json.Marshal(eventDTO)
 			Expect(err).To(BeNil())
 
-			resp, err := http.Post("http://localhost:8888/event", "application/json", bytes.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := http.DefaultClient.Do(req)
+
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
@@ -79,7 +84,10 @@ var _ = Describe("POST /event", func() {
 			body, err := json.Marshal(eventDTO)
 			Expect(err).To(BeNil())
 
-			resp, err := http.Post("http://localhost:8888/event", "application/json", bytes.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPost, "http://localhost:8888/event", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := http.DefaultClient.Do(req)
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
@@ -103,7 +111,10 @@ var _ = Describe("POST /event", func() {
 			body, err := json.Marshal(eventDTO)
 			Expect(err).To(BeNil())
 
-			resp, err := http.Put("http://localhost:8888/event?id="+eventID.String(), "application/json", bytes.NewReader(body))
+			req, _ := http.NewRequest(http.MethodPut, "http://localhost:8888/event?id="+eventID.String(), bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := http.DefaultClient.Do(req)
 			Expect(err).To(BeNil())
 			defer resp.Body.Close()
 
