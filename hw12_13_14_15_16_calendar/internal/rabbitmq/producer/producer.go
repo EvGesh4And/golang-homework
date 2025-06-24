@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/streadway/amqp"
@@ -18,11 +19,32 @@ type RabbitProducer struct {
 	logger     *slog.Logger
 }
 
-func NewRabbitProducer(cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
-	log.Printf("dialing %q", cfg.URI)
-	conn, err := amqp.Dial(cfg.URI)
+func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
+	const maxAttempts = 5
+	const retryDelay = 2 * time.Second
+
+	var conn *amqp.Connection
+	var err error
+
+	for i := 1; i <= maxAttempts; i++ {
+		logger.Info("Попытка подключения к RabbitMQ", slog.String("uri", cfg.URI), slog.Int("attempt", i))
+		conn, err = amqp.Dial(cfg.URI)
+		if err == nil {
+			break
+		}
+
+		log.Printf("Попытка %d: ошибка подключения к RabbitMQ: %v", i, err)
+
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+		case <-time.After(retryDelay):
+			// Пауза перед следующей попыткой
+		}
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("dial: %w", err)
+		return nil, fmt.Errorf("не удалось подключиться к RabbitMQ после %d попыток: %w", maxAttempts, err)
 	}
 
 	ch, err := conn.Channel()

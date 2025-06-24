@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"log"
 	"log/slog"
 	"time"
 
@@ -28,17 +29,34 @@ func New(logger *slog.Logger, dsn string) *Storage {
 	}
 }
 
-func (s *Storage) Connect(ctx context.Context) (err error) {
-	s.db, err = sql.Open("pgx", s.dsn)
-	if err != nil {
-		return fmt.Errorf("создание пула соединений: %w", err)
+func (s *Storage) Connect(ctx context.Context) error {
+	const maxAttempts = 5
+	const retryDelay = 2 * time.Second
+
+	var err error
+
+	for i := 1; i <= maxAttempts; i++ {
+		s.db, err = sql.Open("pgx", s.dsn)
+		if err != nil {
+			err = fmt.Errorf("создание пула соединений: %w", err)
+		} else if pingErr := s.db.PingContext(ctx); pingErr != nil {
+			err = fmt.Errorf("установка соединения: %w", pingErr)
+		} else {
+			// Успешное подключение
+			return nil
+		}
+
+		log.Printf("Попытка %d: ошибка подключения к PostgreSQL: %v", i, err)
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+		case <-time.After(retryDelay):
+			// Пауза перед следующей попыткой
+		}
 	}
 
-	if err := s.db.PingContext(ctx); err != nil {
-		return fmt.Errorf("установка соединения: %w", err)
-	}
-
-	return nil
+	return fmt.Errorf("не удалось подключиться к PostgreSQL после %d попыток: %w", maxAttempts, err)
 }
 
 func (s *Storage) Close() error {

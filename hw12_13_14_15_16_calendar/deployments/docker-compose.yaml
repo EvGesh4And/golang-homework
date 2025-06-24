@@ -1,1 +1,41 @@
-version: "3"
+version: "3.8"
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+
+    environment:
+      POSTGRES_USER:     otus_user
+      POSTGRES_PASSWORD: otus_password
+      POSTGRES_DB:       otus
+
+    ports:
+      - "5432:5432"
+
+  rb:
+    image: rabbitmq:latest
+    container_name: rb
+
+  calendar:
+    image: calendar:develop
+    container_name: calendar
+    depends_on:
+      - db
+      - rb
+    ports:
+      - "8888:8888"     # HTTP
+      - "50051:50051"   # gRPC
+
+  scheduler:
+    image: scheduler:develop
+    container_name: scheduler
+    depends_on:
+      - db
+      - rb
+
+  sender:
+    image: sender:develop
+    container_name: sender
+    depends_on:
+      - rb

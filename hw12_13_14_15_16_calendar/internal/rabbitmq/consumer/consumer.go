@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"time"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
@@ -21,116 +22,106 @@ type RabbitConsumer struct {
 	logger  *slog.Logger
 }
 
-func NewRabbitConsumer(cfg RabbitMQConf, logger *slog.Logger) (*RabbitConsumer, error) {
+func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
 	c := &RabbitConsumer{
-		conn:    nil,
-		channel: nil,
-		tag:     cfg.ConsumerTag,
-		done:    make(chan error),
-		logger:  logger,
+		tag:    cfg.ConsumerTag,
+		done:   make(chan error, 1),
+		logger: lg,
 	}
+
+	const (
+		maxAttempts = 5
+		retryDelay  = 2 * time.Second
+	)
 
 	var err error
+	for i := 1; i <= maxAttempts; i++ {
+		lg.Info("connecting to RabbitMQ",
+			slog.String("uri", cfg.URI),
+			slog.Int("attempt", i),
+		)
 
-	log.Printf("dialing %q", cfg.URI)
-	c.conn, err = amqp.Dial(cfg.URI)
+		c.conn, err = amqp.Dial(cfg.URI)
+		if err == nil {
+			break
+		}
+
+		lg.Error("RabbitMQ dial failed", "error", err)
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("dial cancelled: %w", ctx.Err())
+		case <-time.After(retryDelay):
+		}
+	}
 	if err != nil {
-		return nil, fmt.Errorf("dial: %w", err)
+		return nil, fmt.Errorf("unable to connect after %d attempts: %w", maxAttempts, err)
 	}
 
+	// отслеживаем закрытие подключения брокером
 	go func() {
-		fmt.Printf("closing: %s", <-c.conn.NotifyClose(make(chan *amqp.Error)))
+		c.logger.Warn("connection closed", "error", <-c.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	log.Printf("got Connection, getting Channel")
+	// канал
 	c.channel, err = c.conn.Channel()
 	if err != nil {
 		return nil, fmt.Errorf("channel: %w", err)
 	}
 
-	log.Printf("got Channel, declaring Exchange (%q)", cfg.Exchange)
+	// exchange + queue + bind
 	if err = c.channel.ExchangeDeclare(
-		cfg.Exchange,     // name of the exchange
-		cfg.ExchangeType, // type
-		true,             // durable
-		false,            // delete when complete
-		false,            // internal
-		false,            // noWait
-		nil,              // arguments
+		cfg.Exchange, cfg.ExchangeType,
+		true, false, false, false, nil,
 	); err != nil {
-		return nil, fmt.Errorf("exchange Declare: %w", err)
+		return nil, fmt.Errorf("exchange declare: %w", err)
 	}
 
-	log.Printf("declared Exchange, declaring Queue %q", cfg.Queue)
-	queue, err := c.channel.QueueDeclare(
-		cfg.Queue, // name of the queue
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // noWait
-		nil,       // arguments
+	q, err := c.channel.QueueDeclare(
+		cfg.Queue, true, false, false, false, nil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("queue Declare: %w", err)
+		return nil, fmt.Errorf("queue declare: %w", err)
 	}
-
-	c.queue = queue
-
-	log.Printf("declared Queue (%q %d messages, %d consumers), binding to Exchange (key %q)",
-		queue.Name, queue.Messages, queue.Consumers, cfg.BindingKey)
+	c.queue = q
 
 	if err = c.channel.QueueBind(
-		queue.Name,     // name of the queue
-		cfg.BindingKey, // bindingKey
-		cfg.Exchange,   // sourceExchange
-		false,          // noWait
-		nil,            // arguments
+		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,
 	); err != nil {
-		return nil, fmt.Errorf("queue Bind: %w", err)
+		return nil, fmt.Errorf("queue bind: %w", err)
 	}
 
 	return c, nil
 }
 
-func (c *RabbitConsumer) Shutdown() error {
-	// will close() the deliveries channel
-	if err := c.channel.Cancel(c.tag, true); err != nil {
-		return fmt.Errorf("consumer cancel failed: %w", err)
-	}
-
-	if err := c.conn.Close(); err != nil {
-		return fmt.Errorf("AMQP connection close error: %w", err)
-	}
-
-	defer log.Printf("AMQP shutdown OK")
-
-	// wait for handle() to exit
-	return <-c.done
-}
-
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
 	ctx = logger.WithLogMethod(ctx, "Handle")
+	c.logger.InfoContext(ctx, "start consuming", "consumer_tag", c.tag)
 
-	c.logger.InfoContext(ctx, "queue bound to Exchange, starting Consume", "consumer_tag", c.tag)
 	deliveries, err := c.channel.Consume(
-		c.queue.Name, // name
-		c.tag,        // consumerTag,
-		false,        // noAck
-		false,        // exclusive
-		false,        // noLocal
-		false,        // noWait
-		nil,          // arguments
+		c.queue.Name, c.tag,
+		false, /* auto-ack — нет */
+		false, false, false, nil,
 	)
 	if err != nil {
-		return fmt.Errorf("queue Consume: %w", err)
+		return fmt.Errorf("queue consume: %w", err)
 	}
+
 	for {
 		select {
 		case <-ctx.Done():
-			log.Print("context canceled")
-			c.done <- nil
+			// контекст отменён, выходим
+			c.logger.InfoContext(ctx, "context cancelled")
+			close(c.done)
 			return ctx.Err()
-		case d := <-deliveries:
+
+		case d, ok := <-deliveries:
+			if !ok {
+				// канал закрыт брокером
+				c.logger.InfoContext(ctx, "deliveries channel closed")
+				close(c.done)
+				return nil
+			}
+
 			log.Printf(
 				"got %dB delivery: [%v] %q",
 				len(d.Body),
@@ -149,8 +140,18 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 			c.logger.InfoContext(ctx, "notification event", "notification", notification)
 		}
 	}
-	// log.Printf("handle: deliveries channel closed")
-	// c.done <- nil
+}
 
-	// return nil
+func (c *RabbitConsumer) Shutdown() error {
+	// останавливаем получение новых сообщений
+	if err := c.channel.Cancel(c.tag, true); err != nil {
+		return fmt.Errorf("consumer cancel failed: %w", err)
+	}
+
+	if err := c.conn.Close(); err != nil {
+		return fmt.Errorf("AMQP connection close error: %w", err)
+	}
+
+	<-c.done // ждём завершения Handle
+	return nil
 }

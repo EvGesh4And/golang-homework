@@ -1,7 +1,0 @@
-FROM postgres:latest
-
-ENV POSTGRES_USER=otus_user
-ENV POSTGRES_PASSWORD=otus_password
-ENV POSTGRES_DB=otus
-
-EXPOSE 5432
