@@ -25,10 +25,26 @@ type RabbitConsumer struct {
 func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
 	c := &RabbitConsumer{
 		tag:    cfg.ConsumerTag,
-		done:   make(chan error, 1),
+		done:   make(chan error),
 		logger: lg,
 	}
 
+	if err := c.connectWithRetry(ctx, cfg.URI); err != nil {
+		return nil, err
+	}
+
+	if err := c.initChannel(); err != nil {
+		return nil, err
+	}
+
+	if err := c.declareExchangeQueueBind(cfg); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error {
 	const (
 		maxAttempts = 5
 		retryDelay  = 2 * time.Second
@@ -36,25 +52,24 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 
 	var err error
 	for i := 1; i <= maxAttempts; i++ {
-		lg.Info("connecting to RabbitMQ",
-			slog.String("uri", cfg.URI),
-			slog.Int("attempt", i),
-		)
+		c.logger.Info("Попытка подключения к RabbitMQ", slog.String("uri", uri), slog.Int("attempt", i))
 
-		c.conn, err = amqp.Dial(cfg.URI)
+		c.conn, err = amqp.Dial(uri)
 		if err == nil {
 			break
 		}
 
-		lg.Error("RabbitMQ dial failed", "error", err)
+		log.Printf("Попытка %d: ошибка подключения к RabbitMQ: %v", i, err)
+
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("dial cancelled: %w", ctx.Err())
+			return fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
 		case <-time.After(retryDelay):
+			// Пауза перед следующей попыткой
 		}
 	}
 	if err != nil {
-		return nil, fmt.Errorf("unable to connect after %d attempts: %w", maxAttempts, err)
+		return fmt.Errorf("не удалось подключиться к RabbitMQ после %d попыток: %w", maxAttempts, err)
 	}
 
 	// отслеживаем закрытие подключения брокером
@@ -62,35 +77,48 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 		c.logger.Warn("connection closed", "error", <-c.conn.NotifyClose(make(chan *amqp.Error)))
 	}()
 
-	// канал
+	return nil
+}
+
+func (c *RabbitConsumer) initChannel() error {
+	var err error
 	c.channel, err = c.conn.Channel()
 	if err != nil {
-		return nil, fmt.Errorf("channel: %w", err)
+		return fmt.Errorf("channel: %w", err)
 	}
+	return nil
+}
 
-	// exchange + queue + bind
-	if err = c.channel.ExchangeDeclare(
-		cfg.Exchange, cfg.ExchangeType,
-		true, false, false, false, nil,
+func (c *RabbitConsumer) declareExchangeQueueBind(cfg RabbitMQConf) error {
+	log.Printf("got Channel, declaring %q Exchange (%q)", cfg.ExchangeType, cfg.Exchange)
+
+	if err := c.channel.ExchangeDeclare(
+		cfg.Exchange,
+		cfg.ExchangeType,
+		true,
+		false,
+		false,
+		false,
+		nil,
 	); err != nil {
-		return nil, fmt.Errorf("exchange declare: %w", err)
+		return fmt.Errorf("exchange declare: %w", err)
 	}
 
 	q, err := c.channel.QueueDeclare(
 		cfg.Queue, true, false, false, false, nil,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("queue declare: %w", err)
+		return fmt.Errorf("queue declare: %w", err)
 	}
 	c.queue = q
 
-	if err = c.channel.QueueBind(
+	if err := c.channel.QueueBind(
 		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,
 	); err != nil {
-		return nil, fmt.Errorf("queue bind: %w", err)
+		return fmt.Errorf("queue bind: %w", err)
 	}
 
-	return c, nil
+	return nil
 }
 
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
@@ -122,20 +150,22 @@ func (c *RabbitConsumer) Handle(ctx context.Context) error {
 				return nil
 			}
 
-			log.Printf(
-				"got %dB delivery: [%v] %q",
-				len(d.Body),
-				d.DeliveryTag,
-				d.Body,
+			c.logger.DebugContext(ctx,
+				"received delivery",
+				"size", len(d.Body),
+				"tag", d.DeliveryTag,
+				"body", string(d.Body),
 			)
+
 			c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
-			d.Ack(false)
 
 			var notification storage.Notification
 			if err := json.Unmarshal(d.Body, &notification); err != nil {
 				c.logger.ErrorContext(ctx, "error during unmarshal", "error", err)
 				return err
 			}
+
+			d.Ack(false)
 
 			c.logger.InfoContext(ctx, "notification event", "notification", notification)
 		}

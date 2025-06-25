@@ -17,7 +17,7 @@ type Storage interface {
 
 type Publisher interface {
 	Publish(ctx context.Context, body string) error
-	Close()
+	Shutdown() error
 }
 
 type Scheduler struct {
@@ -48,7 +48,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.publisher.Close()
+			s.publisher.Shutdown()
 			s.logger.InfoContext(ctx, "Scheduler остановлен")
 			return
 		case <-ticker.C:

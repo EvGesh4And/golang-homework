@@ -55,13 +55,6 @@ func main() {
 		return
 	}
 
-	defer func() {
-		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия pubsub: %s", err)
-		} else {
-			log.Print("pubsub успешно закрыт")
-		}
-	}()
 
 	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
 
