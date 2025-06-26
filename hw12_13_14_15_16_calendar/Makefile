@@ -61,7 +61,7 @@ test-dc-run:
 test-dc-stop:
 	docker compose -f ./deployments/docker-compose.yaml down -v || true
 
-integration-tests: test-dc-run
+integration-tests: build-img test-dc-run
 	@set -e; \
 	trap '$(MAKE) test-dc-stop' EXIT; \
 	go test -v -tags=integration ./tests/... -ginkgo.v -ginkgo.fail-fast
