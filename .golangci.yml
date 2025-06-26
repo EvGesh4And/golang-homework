@@ -29,6 +29,8 @@ linters-settings:
           - google.golang.org/grpc
           - github.com/lmittmann/tint
           - github.com/streadway/amqp
+          - golang.org/x/sync/errgroup
+          - github.com/caarlos0/env/v10
       Test:
         files:
           - $test
