@@ -76,14 +76,14 @@ func (s *Scheduler) PublishNotifications(ctx context.Context) {
 	s.logger.InfoContext(ctx, "successfully got notifications", "count", len(notifications))
 	for _, n := range notifications {
 		s.logger.DebugContext(ctx, "trying to serialize notification", "id", n.ID)
-		json, err := json.Marshal(n)
+		jsonData, err := json.Marshal(n)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to serialize notification", "error", err)
 			continue
 		}
 		s.logger.DebugContext(ctx, "successfully serialized notification", "id", n.ID)
 		s.logger.DebugContext(ctx, "trying to publish notification", "id", n.ID)
-		if err := s.publisher.Publish(ctx, string(json)); err != nil {
+		if err := s.publisher.Publish(ctx, string(jsonData)); err != nil {
 			s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to publish notification", "error", err)
 			continue
 		}
