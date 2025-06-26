@@ -41,6 +41,8 @@ func NewScheduler(logger *slog.Logger, storage Storage, publisher Publisher, cfg
 func (s *Scheduler) Start(ctx context.Context) {
 	ctx = logger.WithLogMethod(ctx, "Start")
 
+	s.logger.InfoContext(ctx, "start scheduler")
+
 	ticker := time.NewTicker(s.tick)
 	defer ticker.Stop()
 
@@ -49,7 +51,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			s.publisher.Shutdown()
-			s.logger.InfoContext(ctx, "Scheduler остановлен")
+			s.logger.InfoContext(ctx, "scheduler stopped")
 			return
 		case <-ticker.C:
 			s.PublishNotifications(ctx)
@@ -58,38 +60,42 @@ func (s *Scheduler) Start(ctx context.Context) {
 }
 
 func (s *Scheduler) PublishNotifications(ctx context.Context) {
-	currTime := time.Now()
 	ctx = logger.WithLogMethod(ctx, "PublishNotifications")
+
+	currTime := time.Now()
 	ctx = logger.WithLogStart(ctx, currTime)
 
-	s.logger.DebugContext(ctx, "попытка опубликовать уведомления")
-	s.logger.DebugContext(ctx, "попытка получить уведомления")
+	s.logger.DebugContext(ctx, "trying to publish notifications")
+	s.logger.DebugContext(ctx, "trying to get notifications")
 
 	notifications, err := s.storage.GetNotifications(ctx, currTime, s.tick)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "ошибка получения уведомлений", "error", err)
+		s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to get notifications", "error", err)
 		return
 	}
-	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+	s.logger.InfoContext(ctx, "successfully got notifications", "count", len(notifications))
 	for _, n := range notifications {
+		s.logger.DebugContext(ctx, "trying to serialize notification", "id", n.ID)
 		json, err := json.Marshal(n)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "ошибка сериализации уведомления", "error", err)
+			s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to serialize notification", "error", err)
 			continue
 		}
+		s.logger.DebugContext(ctx, "successfully serialized notification", "id", n.ID)
+		s.logger.DebugContext(ctx, "trying to publish notification", "id", n.ID)
 		if err := s.publisher.Publish(ctx, string(json)); err != nil {
-			s.logger.ErrorContext(ctx, "ошибка публикации уведомления", "error", err)
+			s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to publish notification", "error", err)
 			continue
 		}
-		s.logger.InfoContext(ctx, "опубликовано уведомление", "id", n.ID, "title", n.Title)
+		s.logger.InfoContext(ctx, "Scheduler.PublishNotifications: notification published", "id", n.ID, "title", n.Title)
 	}
 
-	s.logger.InfoContext(ctx, "события успешно опубликованы")
+	s.logger.InfoContext(ctx, "Scheduler.PublishNotifications: events successfully published")
 
-	s.logger.DebugContext(ctx, "попытка удалить старые события")
+	s.logger.DebugContext(ctx, "trying to delete old events")
 	err = s.storage.DeleteOldEvents(ctx, currTime.Add(-s.EventTTL))
 	if err != nil {
-		s.logger.ErrorContext(ctx, "ошибка удаления старых событий", "error", err)
-		return
+		s.logger.ErrorContext(ctx, "Scheduler.PublishNotifications: failed to delete old events", "error", err)
 	}
+	s.logger.InfoContext(ctx, "Scheduler.PublishNotifications: old events deleted")
 }

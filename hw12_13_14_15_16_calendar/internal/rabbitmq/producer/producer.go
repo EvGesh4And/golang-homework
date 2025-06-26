@@ -3,7 +3,6 @@ package producer
 import (
 	"context"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -30,11 +29,11 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 		return nil, err
 	}
 
-	if err := p.initChannel(); err != nil {
+	if err := p.initChannel(ctx); err != nil {
 		return nil, err
 	}
 
-	if err := p.setupExchange(cfg); err != nil {
+	if err := p.setupExchange(ctx, cfg); err != nil {
 		return nil, err
 	}
 
@@ -42,6 +41,7 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 }
 
 func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error {
+	ctx = logger.WithLogMethod(ctx, "connectWithRetry")
 	const (
 		maxAttempts = 5
 		retryDelay  = 2 * time.Second
@@ -49,41 +49,54 @@ func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error
 
 	var err error
 	for i := 1; i <= maxAttempts; i++ {
-		p.logger.Info("Попытка подключения к RabbitMQ", slog.String("uri", uri), slog.Int("attempt", i))
+		p.logger.DebugContext(ctx, "try connecting to RabbitMQ", slog.String("uri", uri), slog.Int("attempt", i))
 
 		p.conn, err = amqp.Dial(uri)
 		if err == nil {
 			break
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к RabbitMQ: %v", i, err)
+		p.logger.WarnContext(ctx, "failed to connect to RabbitMQ", slog.Int("attempt", i), slog.String("error", err.Error()))
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+			p.logger.InfoContext(ctx, "connection cancelled", "error", ctx.Err())
+			return fmt.Errorf("RabbitProducer.connectWithRetry: connection cancelled: %w", ctx.Err())
 		case <-time.After(retryDelay):
-			// Пауза перед следующей попыткой
+			// Pause before the next attempt
 		}
 	}
 
 	if err != nil {
-		return fmt.Errorf("не удалось подключиться к RabbitMQ после %d попыток: %w", maxAttempts, err)
+		return fmt.Errorf("RabbitProducer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w", maxAttempts, err)
 	}
+
+	p.logger.InfoContext(ctx, "connection established")
+
+	// отслеживаем закрытие подключения брокером
+	go func() {
+		p.logger.WarnContext(ctx, "connection closed", "error", <-p.conn.NotifyClose(make(chan *amqp.Error)))
+	}()
 
 	return nil
 }
 
-func (p *RabbitProducer) initChannel() error {
+func (p *RabbitProducer) initChannel(ctx context.Context) error {
+	ctx = logger.WithLogMethod(ctx, "initChannel")
+	p.logger.DebugContext(ctx, "trying to initialize channel")
 	var err error
 	p.channel, err = p.conn.Channel()
 	if err != nil {
-		return fmt.Errorf("channel: %w", err)
+		return fmt.Errorf("RabbitProducer.initChannel: channel: %w", err)
 	}
+	p.logger.InfoContext(ctx, "channel initialized")
 	return nil
 }
 
-func (p *RabbitProducer) setupExchange(cfg RabbitMQConf) error {
-	log.Printf("got Channel, declaring %q Exchange (%q)", cfg.ExchangeType, cfg.Exchange)
+func (p *RabbitProducer) setupExchange(ctx context.Context, cfg RabbitMQConf) error {
+	ctx = logger.WithLogMethod(ctx, "setupExchange")
+
+	p.logger.DebugContext(ctx, "try declaring exchange", "type", cfg.ExchangeType, "name", cfg.Exchange)
 
 	if err := p.channel.ExchangeDeclare(
 		cfg.Exchange,     // name
@@ -95,15 +108,17 @@ func (p *RabbitProducer) setupExchange(cfg RabbitMQConf) error {
 		nil,              // arguments
 	); err != nil {
 		p.channel.Close()
-		return fmt.Errorf("exchange declare: %w", err)
+		return fmt.Errorf("RabbitProducer.setupExchange: exchange declare: %w", err)
 	}
+
+	p.logger.InfoContext(ctx, "exchange declared")
 
 	return nil
 }
 
 func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 	ctx = logger.WithLogMethod(ctx, "Publish")
-	p.logger.InfoContext(ctx, "публикация сообщения", "body", body)
+	p.logger.DebugContext(ctx, "publishing message", "body", body)
 
 	err := p.channel.Publish(
 		p.exchange,   // publish to an exchange
@@ -121,20 +136,21 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 		},
 	)
 	if err != nil {
-		p.logger.ErrorContext(ctx, "ошибка публикации сообщения", "error", err)
+		return fmt.Errorf("RabbitProducer.Publish: failed to publish message: %w", err)
 	}
+	p.logger.InfoContext(ctx, "message published", "body", body)
 
-	return err
+	return nil
 }
 
 func (p *RabbitProducer) Shutdown() error {
 	// останавливаем получение новых сообщений
 	if err := p.channel.Close(); err != nil {
-		return fmt.Errorf("consumer cancel failed: %w", err)
+		return fmt.Errorf("RabbitProducer.Shutdown: consumer cancel failed: %w", err)
 	}
 
 	if err := p.conn.Close(); err != nil {
-		return fmt.Errorf("AMQP connection close error: %w", err)
+		return fmt.Errorf("RabbitProducer.Shutdown: AMQP connection close error: %w", err)
 	}
 	return nil
 }

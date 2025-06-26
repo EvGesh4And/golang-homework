@@ -39,6 +39,7 @@ func main() {
 
 	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
 	if err != nil {
+		log.Printf("ошибка инициализации хранилища: %v", err)
 		return
 	}
 

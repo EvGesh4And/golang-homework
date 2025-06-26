@@ -29,7 +29,7 @@ func main() {
 	cfg := NewConfig()
 	childLoggers, closer, err := setupLogger(cfg)
 	if err != nil {
-		return
+		log.Fatalf("logger setup error: %v", err)
 	}
 	if closer != nil {
 		defer closer.Close()
@@ -39,14 +39,15 @@ func main() {
 
 	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
 	if err != nil {
+		log.Printf("error initializing storage: %v", err)
 		return
 	}
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища sql: %s", err)
+			log.Printf("error closing storage: %s", err)
 		} else {
-			log.Print("хранилище sql успешно закрыто")
+			log.Print("storage sql closed successfully")
 		}
 	}()
 
@@ -55,9 +56,8 @@ func main() {
 		return
 	}
 
-
 	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
 
 	scheduler.Start(ctx)
-	log.Print("scheduler завершился корректно...")
+	log.Print("scheduler shutdown complete...")
 }
