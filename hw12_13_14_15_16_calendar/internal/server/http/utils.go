@@ -50,7 +50,7 @@ func (s *Server) checkError(w http.ResponseWriter, err error, internalServerErro
 	}
 
 	if errors.Is(err, storage.ErrIDNotExist) {
-		http.Error(w, storage.ErrIDNotExist.Error(), http.StatusConflict)
+		http.Error(w, storage.ErrIDNotExist.Error(), http.StatusNotFound)
 		return
 	}
 

@@ -49,14 +49,16 @@ func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error
 
 	var err error
 	for i := 1; i <= maxAttempts; i++ {
-		p.logger.DebugContext(ctx, "try connecting to RabbitMQ", slog.String("uri", uri), slog.Int("attempt", i))
+		p.logger.DebugContext(ctx, "try connecting to RabbitMQ", slog.String("uri", uri),
+			slog.Int("attempt", i))
 
 		p.conn, err = amqp.Dial(uri)
 		if err == nil {
 			break
 		}
 
-		p.logger.WarnContext(ctx, "failed to connect to RabbitMQ", slog.Int("attempt", i), slog.String("error", err.Error()))
+		p.logger.WarnContext(ctx, "failed to connect to RabbitMQ", slog.Int("attempt", i),
+			slog.String("error", err.Error()))
 
 		select {
 		case <-ctx.Done():
@@ -68,7 +70,8 @@ func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error
 	}
 
 	if err != nil {
-		return fmt.Errorf("RabbitProducer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w", maxAttempts, err)
+		return fmt.Errorf("RabbitProducer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w",
+			maxAttempts, err)
 	}
 
 	p.logger.InfoContext(ctx, "connection established")

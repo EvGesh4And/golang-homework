@@ -26,7 +26,11 @@ func main() {
 	}
 
 	log.SetOutput(os.Stdout)
-	cfg := NewConfig()
+	cfg, err := NewConfig()
+	if err != nil {
+		log.Printf("error initializing config: %v", err)
+		return
+	}
 	childLoggers, closer, err := setupLogger(cfg)
 	if err != nil {
 		log.Fatalf("logger setup error: %v", err)

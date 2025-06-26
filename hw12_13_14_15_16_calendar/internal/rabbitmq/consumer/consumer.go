@@ -71,7 +71,8 @@ func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error
 		}
 	}
 	if err != nil {
-		return fmt.Errorf("RabbitConsumer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w", maxAttempts, err)
+		return fmt.Errorf("RabbitConsumer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w",
+			maxAttempts, err)
 	}
 
 	c.logger.InfoContext(ctx, "connection established")
@@ -127,7 +128,8 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 
 	c.logger.InfoContext(ctx, "queue declared")
 
-	c.logger.DebugContext(ctx, "try binding queue", "name", q.Name, "binding_key", cfg.BindingKey, "exchange", cfg.Exchange)
+	c.logger.DebugContext(ctx, "try binding queue", "name", q.Name, "binding_key",
+		cfg.BindingKey, "exchange", cfg.Exchange)
 
 	if err := c.channel.QueueBind(
 		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,

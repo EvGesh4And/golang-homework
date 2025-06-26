@@ -27,7 +27,11 @@ func main() {
 	}
 
 	// ---------- настройка логирования ----------
-	cfg := NewConfig()
+	cfg, err := NewConfig()
+	if err != nil {
+		log.Printf("error initializing config: %v", err)
+		return
+	}
 	child, closer, err := setupLogger(cfg)
 	if err != nil {
 		log.Fatalf("logger setup error: %v", err)

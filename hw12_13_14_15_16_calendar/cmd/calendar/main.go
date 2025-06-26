@@ -6,10 +6,10 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
+	"golang.org/x/sync/errgroup"
 )
 
 var configFile string
@@ -26,9 +26,14 @@ func main() {
 	}
 
 	log.SetOutput(os.Stdout)
-	cfg := NewConfig()
+	cfg, err := NewConfig()
+	if err != nil {
+		log.Printf("error initializing config: %v", err)
+		return
+	}
 	childLoggers, closer, err := setupLogger(cfg)
 	if err != nil {
+		log.Printf("error initializing logger: %v", err)
 		return
 	}
 	if closer != nil {
@@ -39,22 +44,27 @@ func main() {
 
 	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
 	if err != nil {
-		log.Printf("ошибка инициализации хранилища: %v", err)
+		log.Printf("error initializing storage: %v", err)
 		return
 	}
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища %s: %s", cfg.Storage.Mod, err)
+			log.Printf("error closing storage %s: %s", cfg.Storage.Mod, err)
 		} else {
-			log.Printf("хранилище %s успешно закрыто", cfg.Storage.Mod)
+			log.Printf("storage %s successfully closed", cfg.Storage.Mod)
 		}
 	}()
 
 	calendar := app.New(childLoggers.app, storage)
 
-	wg := sync.WaitGroup{}
-	startHTTPServer(ctx, &wg, cfg, childLoggers.http, calendar)
-	startGRPCServer(ctx, &wg, cfg, childLoggers.grpc, calendar)
-	wg.Wait()
+	g, ctx := errgroup.WithContext(ctx)
+
+	startHTTPServer(ctx, g, cfg, childLoggers.http, calendar)
+	startGRPCServer(ctx, g, cfg, childLoggers.grpc, calendar)
+
+	if err := g.Wait(); err != nil {
+		log.Printf("service stopped with error: %v", err)
+		return
+	}
 }

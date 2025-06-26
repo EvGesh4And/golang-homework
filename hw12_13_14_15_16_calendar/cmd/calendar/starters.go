@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/api"
@@ -18,6 +19,7 @@ import (
 	internalhttp "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/http"
 	memorystorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/memory"
 	sqlstorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/sql"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
@@ -45,12 +47,12 @@ func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
 
 		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
-			log.Printf("не удалось открыть лог-файл %s: %s", filePath, err.Error())
+			log.Printf("error opening log file %s: %s", filePath, err.Error())
 			return nil, nil, err
 		}
 		globalLogger = logger.New(cfg.Logger.Level, logFile)
 	default:
-		log.Printf("неизвестный режим логгера: %s, используется консоль", cfg.Logger.Mod)
+		log.Printf("unknown logger mode: %s, using console", cfg.Logger.Mod)
 		globalLogger = logger.New(cfg.Logger.Level, os.Stdout)
 	}
 
@@ -71,81 +73,75 @@ func setupStorage(ctx context.Context, cfg Config, childLoggers *ChildLoggers) (
 
 	switch cfg.Storage.Mod {
 	case "memory":
-		log.Print("используется in-memory хранилище")
+		log.Print("using in-memory storage")
 		return memorystorage.New(logStorageMem), nil, nil
 
 	case "sql":
-		log.Print("инициализация подключения к PostgreSQL...")
+		log.Print("initializing connection to PostgreSQL...")
 
 		sqlStorage := sqlstorage.New(logStorageSQL, cfg.Storage.DSN)
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		if err := sqlStorage.Connect(ctx); err != nil {
-			log.Printf("ошибка подключения к PostgreSQL: %v", err)
+			log.Printf("error connecting to PostgreSQL: %v", err)
 			return nil, nil, err
 		}
 
-		log.Print("выполнение миграций...")
+		log.Print("executing migrations...")
 		if err := sqlStorage.Migrate(cfg.Storage.Migration); err != nil {
 			log.Print(err)
 			return nil, nil, err
 		}
 
-		log.Print("SQL-хранилище успешно инициализировано и подключено")
+		log.Print("SQL storage successfully initialized and connected")
 		return sqlStorage, sqlStorage, nil
 
 	default:
-		log.Printf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
-		return nil, nil, fmt.Errorf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
+		log.Printf("unknown storage type: %v", cfg.Storage.Mod)
+		return nil, nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Mod)
 	}
 }
 
 func startHTTPServer(
 	ctx context.Context,
-	wg *sync.WaitGroup,
+	g *errgroup.Group,
 	cfg Config,
 	logHTTP *slog.Logger,
 	calendar *app.App,
 ) {
 	serverHTTP := internalhttp.NewServerHTTP(cfg.HTTP.Host, cfg.HTTP.Port, logHTTP, calendar)
-	log.Print("http сервер создан")
+	log.Print("HTTP server created")
 
 	addr := fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port)
-	errCh := make(chan error, 1)
 
-	go func() {
-		log.Print("HTTP сервер запускается " + addr + "...")
-		if err := serverHTTP.Start(); err != nil {
-			errCh <- err
+	g.Go(func() error {
+		log.Printf("HTTP server starting %s...", addr)
+		if err := serverHTTP.Start(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("HTTP start: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		select {
-		case <-ctx.Done():
-			log.Print("получен сигнал завершения, останавливаем HTTP сервер...")
-		case err := <-errCh:
-			log.Printf("HTTP сервер аварийно остановился: %s", err)
-		}
-
+	g.Go(func() error {
+		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
+		log.Print("[shutdown] stopping HTTP server...")
+
 		if err := serverHTTP.Stop(shutdownCtx); err != nil {
-			log.Printf("[shutdown] ошибка завершения сервера HTTP: %s", err)
+			log.Printf("[shutdown] error stopping HTTP server: %s", err)
 		} else {
-			log.Print("[shutdown] HTTP сервер завершился корректно...")
+			log.Print("[shutdown] HTTP server stopped gracefully...")
 		}
-	}()
+		return ctx.Err()
+	})
 }
 
 func startGRPCServer(
 	ctx context.Context,
-	wg *sync.WaitGroup,
+	g *errgroup.Group,
 	cfg Config,
 	logGRPC *slog.Logger,
 	calendar *app.App,
@@ -154,37 +150,26 @@ func startGRPCServer(
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Printf("gRPC не удалось слушать порт %v: %v", addr, err)
-		os.Exit(1)
+		g.Go(func() error {
+			return fmt.Errorf("gRPC failed to listen on port %s: %w", addr, err)
+		})
+		return
 	}
 
 	serverGRPC := grpcserver.NewServerGRPC(logGRPC, lis, calendar)
 	grpcSrv := grpc.NewServer()
 	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
 
-	log.Print("gRPC сервер создан")
-
-	errCh := make(chan error, 1)
-
-	go func() {
-		log.Print("gRPC сервер запускается " + lis.Addr().String() + "...")
-		if err := grpcSrv.Serve(lis); err != nil {
-			errCh <- err
+	g.Go(func() error {
+		log.Printf("gRPC server starting %s...", lis.Addr().String())
+		if err := grpcSrv.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			return fmt.Errorf("grpc serve: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		select {
-		case <-ctx.Done():
-			log.Print("получен сигнал завершения, останавливаем gRPC сервер...")
-		case err := <-errCh:
-			log.Printf("gRPC сервер аварийно остановился: %s", err)
-			return
-		}
-
+	g.Go(func() error {
+		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
@@ -196,10 +181,11 @@ func startGRPCServer(
 
 		select {
 		case <-done:
-			log.Print("[shutdown] gRPC сервер завершился корректно...")
+			log.Print("[shutdown] gRPC server stopped gracefully...")
 		case <-shutdownCtx.Done():
-			log.Print("[shutdown] таймаут graceful shutdown gRPC, вызываем Stop()")
+			log.Print("[shutdown] gRPC graceful shutdown timeout, calling Stop()")
 			grpcSrv.Stop()
 		}
-	}()
+		return ctx.Err()
+	})
 }
