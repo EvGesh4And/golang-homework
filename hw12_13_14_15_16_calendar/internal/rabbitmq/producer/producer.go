@@ -117,7 +117,8 @@ func (p *RabbitProducer) initChannel(ctx context.Context) error {
 func (p *RabbitProducer) setupExchange(ctx context.Context, cfg RabbitMQConf) error {
 	ctx = logger.WithLogMethod(ctx, "setupExchange")
 
-	p.logger.DebugContext(ctx, "RabbitProducer.setupExchange: trying to declare exchange", "type", cfg.ExchangeType, "name", cfg.Exchange)
+	p.logger.DebugContext(ctx, "RabbitProducer.setupExchange: trying to declare exchange",
+		"type", cfg.ExchangeType, "name", cfg.Exchange)
 
 	if err := p.channel.ExchangeDeclare(
 		cfg.Exchange,     // name
@@ -165,9 +166,11 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 		select {
 		case confirm := <-p.confirms:
 			if confirm.Ack {
-				p.logger.InfoContext(ctx, "RabbitProducer.Publish: message delivery confirmed", slog.Uint64("deliveryTag", confirm.DeliveryTag))
+				p.logger.InfoContext(ctx, "RabbitProducer.Publish: message delivery confirmed",
+					slog.Uint64("deliveryTag", confirm.DeliveryTag))
 			} else {
-				p.logger.ErrorContext(ctx, "RabbitProducer.Publish: message delivery NOT confirmed", slog.Uint64("deliveryTag", confirm.DeliveryTag))
+				p.logger.ErrorContext(ctx, "RabbitProducer.Publish: message delivery NOT confirmed",
+					slog.Uint64("deliveryTag", confirm.DeliveryTag))
 				return fmt.Errorf("RabbitProducer.Publish: message not acknowledged by broker")
 			}
 		case <-time.After(5 * time.Second):
