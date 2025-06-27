@@ -19,14 +19,19 @@ type RabbitProducer struct {
 	reliable   bool
 	confirms   chan amqp.Confirmation
 	logger     *slog.Logger
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	p := &RabbitProducer{
 		exchange:   cfg.Exchange,
 		routingKey: cfg.RoutingKey,
 		reliable:   cfg.Reliable,
 		logger:     logger,
+		ctx:        ctx,
+		cancel:     cancel,
 	}
 
 	if err := p.connectWithRetry(ctx, cfg.URI); err != nil {
@@ -40,6 +45,8 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 	if err := p.setupExchange(ctx, cfg); err != nil {
 		return nil, err
 	}
+
+	go p.startReconnectLoop(p.ctx, cfg)
 
 	return p, nil
 }
@@ -192,5 +199,36 @@ func (p *RabbitProducer) Shutdown() error {
 		errs = append(errs, fmt.Errorf("RabbitProducer.Shutdown: AMQP connection close error: %w", err))
 	}
 
+	p.cancel()
+
 	return errors.Join(errs...)
+}
+
+func (p *RabbitProducer) startReconnectLoop(ctx context.Context, cfg RabbitMQConf) {
+	notify := p.conn.NotifyClose(make(chan *amqp.Error))
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case errNotify := <-notify:
+			if errNotify != nil {
+				p.logger.WarnContext(ctx, "connection closed", slog.String("error", errNotify.Error()))
+			}
+
+			for ctx.Err() == nil {
+				if err := p.connectWithRetry(ctx, cfg.URI); err != nil {
+					continue
+				}
+				if err := p.initChannel(ctx); err != nil {
+					continue
+				}
+				if err := p.setupExchange(ctx, cfg); err != nil {
+					continue
+				}
+
+				notify = p.conn.NotifyClose(make(chan *amqp.Error))
+				break
+			}
+		}
+	}
 }

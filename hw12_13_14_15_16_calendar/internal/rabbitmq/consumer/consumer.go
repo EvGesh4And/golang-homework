@@ -14,19 +14,26 @@ import (
 )
 
 type RabbitConsumer struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	tag     string
-	done    chan error
-	queue   amqp.Queue
-	logger  *slog.Logger
+	conn      *amqp.Connection
+	channel   *amqp.Channel
+	tag       string
+	done      chan error
+	queue     amqp.Queue
+	logger    *slog.Logger
+	ctx       context.Context
+	cancel    context.CancelFunc
+	reconnect chan struct{}
 }
 
 func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
+	ctx, cancel := context.WithCancel(ctx)
 	c := &RabbitConsumer{
-		tag:    cfg.ConsumerTag,
-		done:   make(chan error),
-		logger: lg,
+		tag:       cfg.ConsumerTag,
+		done:      make(chan error),
+		logger:    lg,
+		ctx:       ctx,
+		cancel:    cancel,
+		reconnect: make(chan struct{}, 1),
 	}
 
 	if err := c.connectWithRetry(ctx, cfg.URI); err != nil {
@@ -40,6 +47,9 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 	if err := c.declareExchangeQueueBind(ctx, cfg); err != nil {
 		return nil, err
 	}
+
+	c.reconnect <- struct{}{}
+	go c.startReconnectLoop(c.ctx, cfg)
 
 	return c, nil
 }
@@ -145,56 +155,63 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
 	ctx = logger.WithLogMethod(ctx, "Handle")
 
-	c.logger.DebugContext(ctx, "try consuming", "consumer_tag", c.tag)
-
-	deliveries, err := c.channel.Consume(
-		c.queue.Name,
-		c.tag,
-		false, /* auto-ack — нет */
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return fmt.Errorf("RabbitConsumer.Handle: queue consume: %w", err)
-	}
-
-	c.logger.InfoContext(ctx, "messages are being consumed")
-
+outer:
 	for {
 		select {
 		case <-ctx.Done():
-			// контекст отменён, выходим
 			c.logger.InfoContext(ctx, "context cancelled")
 			return fmt.Errorf("RabbitConsumer.Handle: context cancelled: %w", ctx.Err())
+		case <-c.reconnect:
+		}
 
-		case d, ok := <-deliveries:
-			if !ok {
-				// канал закрыт брокером, выходим
-				c.logger.InfoContext(ctx, "deliveries channel closed")
-				return fmt.Errorf("RabbitConsumer.Handle: deliveries channel closed")
+		c.logger.DebugContext(ctx, "try consuming", "consumer_tag", c.tag)
+
+		deliveries, err := c.channel.Consume(
+			c.queue.Name,
+			c.tag,
+			false,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			return fmt.Errorf("RabbitConsumer.Handle: queue consume: %w", err)
+		}
+
+		c.logger.InfoContext(ctx, "messages are being consumed")
+
+		for {
+			select {
+			case <-ctx.Done():
+				c.logger.InfoContext(ctx, "context cancelled")
+				return fmt.Errorf("RabbitConsumer.Handle: context cancelled: %w", ctx.Err())
+			case d, ok := <-deliveries:
+				if !ok {
+					c.logger.InfoContext(ctx, "deliveries channel closed")
+					continue outer
+				}
+
+				c.logger.DebugContext(ctx,
+					"received delivery",
+					"size", len(d.Body),
+					"tag", d.DeliveryTag,
+					"body", string(d.Body),
+				)
+
+				c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
+
+				c.logger.DebugContext(ctx, "try unmarshalling notification")
+				var notification storage.Notification
+				if err := json.Unmarshal(d.Body, &notification); err != nil {
+					return fmt.Errorf("RabbitConsumer.Handle: error during unmarshal: %w", err)
+				}
+				c.logger.InfoContext(ctx, "notification unmarshalled", "notification", notification)
+
+				d.Ack(false)
+
+				c.logger.InfoContext(ctx, "notification event", "notification", notification)
 			}
-
-			c.logger.DebugContext(ctx,
-				"received delivery",
-				"size", len(d.Body),
-				"tag", d.DeliveryTag,
-				"body", string(d.Body),
-			)
-
-			c.logger.InfoContext(ctx, "message delivered", "delivery_tag", d.DeliveryTag)
-
-			c.logger.DebugContext(ctx, "try unmarshalling notification")
-			var notification storage.Notification
-			if err := json.Unmarshal(d.Body, &notification); err != nil {
-				return fmt.Errorf("RabbitConsumer.Handle: error during unmarshal: %w", err)
-			}
-			c.logger.InfoContext(ctx, "notification unmarshalled", "notification", notification)
-
-			d.Ack(false)
-
-			c.logger.InfoContext(ctx, "notification event", "notification", notification)
 		}
 	}
 }
@@ -209,6 +226,8 @@ func (c *RabbitConsumer) Shutdown() error {
 	if err := c.conn.Close(); err != nil {
 		errs = append(errs, fmt.Errorf("RabbitConsumer.Shutdown: AMQP connection close error: %w", err))
 	}
+
+	c.cancel()
 
 	<-c.done // ждём завершения Handle
 
@@ -225,4 +244,39 @@ func (c *RabbitConsumer) SignalDone() {
 
 func (c *RabbitConsumer) Done() <-chan error {
 	return c.done
+}
+
+func (c *RabbitConsumer) startReconnectLoop(ctx context.Context, cfg RabbitMQConf) {
+	notify := c.conn.NotifyClose(make(chan *amqp.Error))
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case errNotify := <-notify:
+			if errNotify != nil {
+				c.logger.WarnContext(ctx, "connection closed", slog.String("error", errNotify.Error()))
+			}
+
+			for ctx.Err() == nil {
+				if err := c.connectWithRetry(ctx, cfg.URI); err != nil {
+					continue
+				}
+				if err := c.initChannel(ctx); err != nil {
+					continue
+				}
+				if err := c.declareExchangeQueueBind(ctx, cfg); err != nil {
+					continue
+				}
+
+				notify = c.conn.NotifyClose(make(chan *amqp.Error))
+
+				select {
+				case c.reconnect <- struct{}{}:
+				default:
+				}
+
+				break
+			}
+		}
+	}
 }
