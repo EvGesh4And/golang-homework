@@ -2,6 +2,7 @@ package producer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -15,6 +16,8 @@ type RabbitProducer struct {
 	channel    *amqp.Channel
 	exchange   string
 	routingKey string
+	reliable   bool
+	confirms   chan amqp.Confirmation
 	logger     *slog.Logger
 }
 
@@ -22,6 +25,7 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 	p := &RabbitProducer{
 		exchange:   cfg.Exchange,
 		routingKey: cfg.RoutingKey,
+		reliable:   cfg.Reliable,
 		logger:     logger,
 	}
 
@@ -87,12 +91,26 @@ func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error
 func (p *RabbitProducer) initChannel(ctx context.Context) error {
 	ctx = logger.WithLogMethod(ctx, "initChannel")
 	p.logger.DebugContext(ctx, "trying to initialize channel")
+
 	var err error
 	p.channel, err = p.conn.Channel()
 	if err != nil {
 		return fmt.Errorf("RabbitProducer.initChannel: channel: %w", err)
 	}
+
 	p.logger.InfoContext(ctx, "channel initialized")
+
+	// Включаем publisher confirms
+	if p.reliable {
+		p.logger.InfoContext(ctx, "enabling publishing confirms")
+
+		if err := p.channel.Confirm(false); err != nil {
+			return fmt.Errorf("RabbitProducer.initChannel: could not enable confirms: %w", err)
+		}
+
+		p.confirms = p.channel.NotifyPublish(make(chan amqp.Confirmation, 1))
+	}
+
 	return nil
 }
 
@@ -123,37 +141,53 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 	ctx = logger.WithLogMethod(ctx, "Publish")
 	p.logger.DebugContext(ctx, "publishing message", "body", body)
 
-	err := p.channel.Publish(
-		p.exchange,   // publish to an exchange
-		p.routingKey, // routing to 0 or more queues
-		false,        // mandatory
-		false,        // immediate
+	if err := p.channel.Publish(
+		p.exchange,
+		p.routingKey,
+		false,
+		false,
 		amqp.Publishing{
 			Headers:         amqp.Table{},
 			ContentType:     "text/plain",
 			ContentEncoding: "",
 			Body:            []byte(body),
-			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
-			Priority:        0,              // 0-9
-			// a bunch of application/implementation-specific fields
+			DeliveryMode:    amqp.Transient,
+			Priority:        0,
 		},
-	)
-	if err != nil {
+	); err != nil {
 		return fmt.Errorf("RabbitProducer.Publish: failed to publish message: %w", err)
 	}
-	p.logger.InfoContext(ctx, "message published", "body", body)
+
+	p.logger.InfoContext(ctx, "RabbitProducer.Publish: message published", "body", body)
+
+	// Ожидание подтверждения (если reliable)
+	if p.reliable {
+		select {
+		case confirm := <-p.confirms:
+			if confirm.Ack {
+				p.logger.InfoContext(ctx, "message delivery confirmed", slog.Uint64("deliveryTag", confirm.DeliveryTag))
+			} else {
+				p.logger.ErrorContext(ctx, "message delivery NOT confirmed", slog.Uint64("deliveryTag", confirm.DeliveryTag))
+				return fmt.Errorf("RabbitProducer.Publish: message not acknowledged by broker")
+			}
+		case <-time.After(5 * time.Second):
+			return fmt.Errorf("RabbitProducer.Publish: timeout waiting for confirmation")
+		}
+	}
 
 	return nil
 }
 
 func (p *RabbitProducer) Shutdown() error {
-	// останавливаем получение новых сообщений
+	var errs []error
+
 	if err := p.channel.Close(); err != nil {
-		return fmt.Errorf("RabbitProducer.Shutdown: consumer cancel failed: %w", err)
+		errs = append(errs, fmt.Errorf("RabbitProducer.Shutdown: channel close failed: %w", err))
 	}
 
 	if err := p.conn.Close(); err != nil {
-		return fmt.Errorf("RabbitProducer.Shutdown: AMQP connection close error: %w", err)
+		errs = append(errs, fmt.Errorf("RabbitProducer.Shutdown: AMQP connection close error: %w", err))
 	}
-	return nil
+
+	return errors.Join(errs...)
 }

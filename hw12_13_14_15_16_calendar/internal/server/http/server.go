@@ -36,6 +36,8 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Applic
 		Addr:              fmt.Sprintf("%s:%d", host, port),
 		Handler:           wrapped,
 		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 	s.httpServer = httpServer
 	s.handler = wrapped

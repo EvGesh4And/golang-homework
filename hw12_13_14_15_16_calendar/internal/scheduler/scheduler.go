@@ -50,7 +50,10 @@ func (s *Scheduler) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			s.publisher.Shutdown()
+			if err := s.publisher.Shutdown(); err != nil {
+				s.logger.ErrorContext(ctx, "failed to shutdown publisher", "error", err)
+				return
+			}
 			s.logger.InfoContext(ctx, "scheduler stopped")
 			return
 		case <-ticker.C:
