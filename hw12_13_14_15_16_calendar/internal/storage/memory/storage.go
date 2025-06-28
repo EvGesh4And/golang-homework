@@ -33,17 +33,17 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	s.logger.DebugContext(ctx, "попытка создать событие")
 
 	if err := ctx.Err(); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if _, ok := s.eventMap[event.ID]; ok {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrIDRepeated))
+		return logger.WrapError(ctx, storage.ErrIDRepeated)
 	}
 	if !s.intervals.AddIfFree(event.GetInterval()) {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.CreateEvent: %w", storage.ErrDateBusy))
+		return logger.WrapError(ctx, storage.ErrDateBusy)
 	}
 
 	s.eventMap[event.ID] = event
@@ -55,7 +55,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	s.logger.DebugContext(ctx, "попытка обновить событие")
 
 	if err := ctx.Err(); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 
 	s.mu.Lock()
@@ -63,11 +63,11 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 	oldEvent, ok := s.eventMap[id]
 	if !ok {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrIDNotExist))
+		return logger.WrapError(ctx, storage.ErrIDNotExist)
 	}
 
 	if !s.intervals.Replace(newEvent.GetInterval(), oldEvent.GetInterval()) {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.UpdateEvent: %w", storage.ErrDateBusy))
+		return logger.WrapError(ctx, storage.ErrDateBusy)
 	}
 
 	s.eventMap[id] = newEvent
@@ -79,7 +79,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	s.logger.DebugContext(ctx, "попытка удалить событие")
 
 	if err := ctx.Err(); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.DeleteEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 
 	s.mu.Lock()
@@ -87,7 +87,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 	event, ok := s.eventMap[id]
 	if !ok {
-		return logger.WrapError(ctx, fmt.Errorf("storage:memory.DeleteEvent: %w", storage.ErrIDNotExist))
+		return logger.WrapError(ctx, storage.ErrIDNotExist)
 	}
 
 	s.intervals.Remove(event.GetInterval())
@@ -126,7 +126,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	s.logger.DebugContext(ctx, "попытка получить события за интервал")
 
 	if err := ctx.Err(); err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:memory.getEvents: %w", err))
+		return nil, logger.WrapError(ctx, err)
 	}
 
 	s.mu.RLock()
@@ -139,7 +139,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	for _, inter := range intervals {
 		event, ok := s.eventMap[inter.ID]
 		if !ok {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:memory.getEvents: %w", storage.ErrGetEvents))
+			return nil, logger.WrapError(ctx, storage.ErrGetEvents)
 		}
 		res = append(res, event)
 	}

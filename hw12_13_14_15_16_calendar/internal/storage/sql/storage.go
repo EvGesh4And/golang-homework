@@ -99,7 +99,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 		int64(event.TimeBefore.Seconds()),
 	)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.CreateEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "успешно создано событие")
 	return nil
@@ -126,7 +126,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 		id,
 	)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.UpdateEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "успешно обновлено событие")
 	return nil
@@ -144,7 +144,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 	_, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteEvent: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "успешно удалено событие")
 	return nil
@@ -186,7 +186,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 
 	rows, err := s.db.QueryContext(ctx, query, start, start.Add(d))
 	if err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+		return nil, logger.WrapError(ctx, err)
 	}
 	defer rows.Close()
 
@@ -203,12 +203,12 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 			&event.End,
 			&intervalStr,
 		); err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+			return nil, logger.WrapError(ctx, err)
 		}
 
 		dur, err := parsePostgresInterval(intervalStr)
 		if err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+			return nil, logger.WrapError(ctx, err)
 		}
 		event.TimeBefore = dur
 
@@ -216,7 +216,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+		return nil, logger.WrapError(ctx, err)
 	}
 
 	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
@@ -242,7 +242,7 @@ func (s *Storage) GetNotifications(
 
 	rows, err := s.db.QueryContext(ctx, query, currTime, currTime.Add(tick))
 	if err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+		return nil, logger.WrapError(ctx, err)
 	}
 	defer rows.Close()
 
@@ -255,14 +255,14 @@ func (s *Storage) GetNotifications(
 			&notification.Start,
 			&notification.UserID,
 		); err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+			return nil, logger.WrapError(ctx, err)
 		}
 
 		notifications = append(notifications, notification)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+		return nil, logger.WrapError(ctx, err)
 	}
 
 	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
@@ -283,11 +283,11 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 
 	res, err := s.db.ExecContext(ctx, query, delTime)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 	count, err := res.RowsAffected()
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+		return logger.WrapError(ctx, err)
 	}
 	if count > 0 {
 		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
