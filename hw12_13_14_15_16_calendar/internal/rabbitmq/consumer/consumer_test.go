@@ -13,9 +13,24 @@ import (
 
 type ackMock struct{ err error }
 
-func (a *ackMock) Ack(tag uint64, multiple bool) error                { return a.err }
-func (a *ackMock) Nack(tag uint64, multiple bool, requeue bool) error { return nil }
-func (a *ackMock) Reject(tag uint64, requeue bool) error              { return nil }
+func (a *ackMock) Ack(tag uint64, multiple bool) error {
+	_ = tag
+	_ = multiple
+	return a.err
+}
+
+func (a *ackMock) Nack(tag uint64, multiple bool, requeue bool) error {
+	_ = tag
+	_ = multiple
+	_ = requeue
+	return nil
+}
+
+func (a *ackMock) Reject(tag uint64, requeue bool) error {
+	_ = tag
+	_ = requeue
+	return nil
+}
 
 func TestAckDeliveryError(t *testing.T) {
 	var buf bytes.Buffer

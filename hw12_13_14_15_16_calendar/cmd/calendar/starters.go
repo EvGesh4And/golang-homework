@@ -13,7 +13,6 @@ import (
 
 	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/api"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	logsetup "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger/setup"
 	grpcserver "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc"
 	internalhttp "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/http"

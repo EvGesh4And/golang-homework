@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	logsetup "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger/setup"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/scheduler"
 	sqlstorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/sql"

@@ -20,7 +20,6 @@ import (
 )
 
 func setupStorage(t *testing.T) *sqlstorage.Storage {
-
 	if testing.Short() {
 		t.Skip("-short: пропускаем интеграцию")
 	}

@@ -1,21 +1,21 @@
 package internalhttp
 
 import (
-        "bytes"
-        "context"
-        "encoding/json"
-        "errors"
-        "net/http"
-        "net/http/httptest"
-        "os"
-        "testing"
-        "time"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
 
-        "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
-        "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
-        serverpkg "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
-        "github.com/google/uuid"
-        "github.com/stretchr/testify/assert"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
+	serverpkg "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockApp struct {
@@ -192,127 +192,140 @@ func TestGetEventsMonth(t *testing.T) {
 }
 
 func TestCreateEvent_BadJSON(t *testing.T) {
-    app := &mockApp{}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	app := &mockApp{}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    req := httptest.NewRequest(http.MethodPost, "/event", bytes.NewBufferString("{"))
-    req.Header.Set("Content-Type", "application/json")
-    w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/event", bytes.NewBufferString("{"))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
-    assert.Equal(t, serverpkg.ErrInvalidEventData.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	assert.Equal(t, serverpkg.ErrInvalidEventData.Error()+"\n", w.Body.String())
 }
 
 func TestCreateEvent_StorageError(t *testing.T) {
-    app := &mockApp{createEvent: func(ctx context.Context, event storage.Event) error {
-        return storage.ErrIDRepeated
-    }}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	app := &mockApp{createEvent: func(ctx context.Context, event storage.Event) error {
+		_ = ctx
+		_ = event
+		return storage.ErrIDRepeated
+	}}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    event := storage.Event{
-        ID:         uuid.New(),
-        Title:      "title",
-        UserID:     uuid.New(),
-        Start:      time.Now().Add(time.Hour),
-        End:        time.Now().Add(2 * time.Hour),
-        TimeBefore: time.Minute,
-    }
-    body, _ := json.Marshal(event)
-    req := httptest.NewRequest(http.MethodPost, "/event", bytes.NewReader(body))
-    req.Header.Set("Content-Type", "application/json")
-    w := httptest.NewRecorder()
+	event := storage.Event{
+		ID:         uuid.New(),
+		Title:      "title",
+		UserID:     uuid.New(),
+		Start:      time.Now().Add(time.Hour),
+		End:        time.Now().Add(2 * time.Hour),
+		TimeBefore: time.Minute,
+	}
+	body, _ := json.Marshal(event)
+	req := httptest.NewRequest(http.MethodPost, "/event", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusConflict, w.Result().StatusCode)
-    assert.Equal(t, storage.ErrIDRepeated.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusConflict, w.Result().StatusCode)
+	assert.Equal(t, storage.ErrIDRepeated.Error()+"\n", w.Body.String())
 }
 
 func TestUpdateEvent_InvalidID(t *testing.T) {
-    app := &mockApp{}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	app := &mockApp{}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    event := storage.Event{Title: "title", UserID: uuid.New(), Start: time.Now().Add(time.Hour), End: time.Now().Add(2 * time.Hour)}
-    body, _ := json.Marshal(event)
-    req := httptest.NewRequest(http.MethodPut, "/event?id=bad", bytes.NewReader(body))
-    req.Header.Set("Content-Type", "application/json")
-    w := httptest.NewRecorder()
+	event := storage.Event{
+		Title: "title", UserID: uuid.New(), Start: time.Now().Add(time.Hour),
+		End: time.Now().Add(2 * time.Hour),
+	}
+	body, _ := json.Marshal(event)
+	req := httptest.NewRequest(http.MethodPut, "/event?id=bad", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
-    assert.Equal(t, serverpkg.ErrInvalidEventID.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	assert.Equal(t, serverpkg.ErrInvalidEventID.Error()+"\n", w.Body.String())
 }
 
 func TestDeleteEvent_NotFound(t *testing.T) {
-    eventID := uuid.New()
-    app := &mockApp{deleteEvent: func(ctx context.Context, id uuid.UUID) error { return storage.ErrIDNotExist }}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	eventID := uuid.New()
+	app := &mockApp{deleteEvent: func(ctx context.Context, id uuid.UUID) error {
+		_ = ctx
+		_ = id
+		return storage.ErrIDNotExist
+	}}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    req := httptest.NewRequest(http.MethodDelete, "/event?id="+eventID.String(), nil)
-    w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodDelete, "/event?id="+eventID.String(), nil)
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusNotFound, w.Result().StatusCode)
-    assert.Equal(t, storage.ErrIDNotExist.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusNotFound, w.Result().StatusCode)
+	assert.Equal(t, storage.ErrIDNotExist.Error()+"\n", w.Body.String())
 }
 
 func TestGetEventsDay_InvalidStart(t *testing.T) {
-    app := &mockApp{}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	app := &mockApp{}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    req := httptest.NewRequest(http.MethodGet, "/event/day?start=bad", nil)
-    w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/event/day?start=bad", nil)
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
-    assert.Equal(t, serverpkg.ErrInvalidStartPeriod.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
+	assert.Equal(t, serverpkg.ErrInvalidStartPeriod.Error()+"\n", w.Body.String())
 }
 
 func TestGetEventsDay_AppError(t *testing.T) {
-    app := &mockApp{getEventsDay: func(ctx context.Context, start time.Time) ([]storage.Event, error) {
-        return nil, errors.New("boom")
-    }}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	app := &mockApp{getEventsDay: func(ctx context.Context, start time.Time) ([]storage.Event, error) {
+		_ = ctx
+		_ = start
+		return nil, errors.New("boom")
+	}}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
-    w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
-    assert.Equal(t, serverpkg.ErrEventRetrieval.Error()+"\n", w.Body.String())
+	assert.Equal(t, http.StatusInternalServerError, w.Result().StatusCode)
+	assert.Equal(t, serverpkg.ErrEventRetrieval.Error()+"\n", w.Body.String())
 }
 
 func TestGetEventsDay_Response(t *testing.T) {
-    ev := storage.Event{ID: uuid.New(), Title: "Day event"}
-    app := &mockApp{getEventsDay: func(ctx context.Context, start time.Time) ([]storage.Event, error) {
-        return []storage.Event{ev}, nil
-    }}
-    logger := logger.New("info", os.Stdout)
-    server := NewServerHTTP("localhost", 8080, logger, app)
+	ev := storage.Event{ID: uuid.New(), Title: "Day event"}
+	app := &mockApp{getEventsDay: func(ctx context.Context, start time.Time) ([]storage.Event, error) {
+		_ = ctx
+		_ = start
+		return []storage.Event{ev}, nil
+	}}
+	logger := logger.New("info", os.Stdout)
+	server := NewServerHTTP("localhost", 8080, logger, app)
 
-    req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
-    w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
+	w := httptest.NewRecorder()
 
-    server.Handler().ServeHTTP(w, req)
+	server.Handler().ServeHTTP(w, req)
 
-    assert.Equal(t, http.StatusOK, w.Result().StatusCode)
+	assert.Equal(t, http.StatusOK, w.Result().StatusCode)
 
-    var resp []storage.EventDTO
-    err := json.Unmarshal(w.Body.Bytes(), &resp)
-    assert.NoError(t, err)
-    assert.Len(t, resp, 1)
-    assert.Equal(t, ev.ID, resp[0].ID)
-    assert.Equal(t, ev.Title, resp[0].Title)
+	var resp []storage.EventDTO
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.NoError(t, err)
+	assert.Len(t, resp, 1)
+	assert.Equal(t, ev.ID, resp[0].ID)
+	assert.Equal(t, ev.Title, resp[0].Title)
 }
