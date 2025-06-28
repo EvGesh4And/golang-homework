@@ -13,6 +13,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// RabbitConsumer consumes events from RabbitMQ.
 type RabbitConsumer struct {
 	conn      *amqp.Connection
 	channel   *amqp.Channel
@@ -24,6 +25,7 @@ type RabbitConsumer struct {
 	reconnect chan struct{}
 }
 
+// NewRabbitConsumer creates and configures a RabbitMQ consumer.
 func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	c := &RabbitConsumer{
@@ -150,6 +152,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 	return nil
 }
 
+// Handle starts consuming messages from RabbitMQ.
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
 	defer close(c.done)
 
@@ -216,6 +219,7 @@ outer:
 	}
 }
 
+// Shutdown gracefully closes consumer resources.
 func (c *RabbitConsumer) Shutdown() error {
 	var errs []error
 

@@ -18,6 +18,7 @@ var levelMap = map[string]slog.Level{
 	"debug": slog.LevelDebug,
 }
 
+// New creates a logger with the provided level and writer.
 func New(level string, out io.Writer) *slog.Logger {
 	var levLog slog.Level
 	if lvl, ok := levelMap[level]; ok {

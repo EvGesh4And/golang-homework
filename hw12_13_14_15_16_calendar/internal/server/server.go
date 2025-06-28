@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Application defines business logic used by HTTP and gRPC servers.
 type Application interface {
 	CreateEvent(ctx context.Context, event storage.Event) error
 	UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error

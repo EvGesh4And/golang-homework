@@ -16,12 +16,14 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+// Storage works with PostgreSQL to persist events.
 type Storage struct {
 	dsn    string
 	db     *sql.DB
 	logger *slog.Logger
 }
 
+// New creates a new SQL storage with the given DSN.
 func New(logger *slog.Logger, dsn string) *Storage {
 	return &Storage{
 		dsn:    dsn,
@@ -29,6 +31,7 @@ func New(logger *slog.Logger, dsn string) *Storage {
 	}
 }
 
+// Connect establishes database connection with retries.
 func (s *Storage) Connect(ctx context.Context) error {
 	const maxAttempts = 5
 	const retryDelay = 2 * time.Second
@@ -59,6 +62,7 @@ func (s *Storage) Connect(ctx context.Context) error {
 	return fmt.Errorf("не удалось подключиться к PostgreSQL после %d попыток: %w", maxAttempts, err)
 }
 
+// Close closes database connection.
 func (s *Storage) Close() error {
 	return s.db.Close()
 }
@@ -66,6 +70,7 @@ func (s *Storage) Close() error {
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+// Migrate runs database migrations.
 func (s *Storage) Migrate(migrate string) (err error) {
 	goose.SetBaseFS(embedMigrations)
 
@@ -80,6 +85,7 @@ func (s *Storage) Migrate(migrate string) (err error) {
 	return nil
 }
 
+// CreateEvent inserts a new event into database.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
 	s.logger.DebugContext(ctx, "попытка создать событие")
@@ -105,6 +111,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
+// UpdateEvent updates an existing event in database.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
 	s.logger.DebugContext(ctx, "попытка обновить событие")
@@ -132,6 +139,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	return nil
 }
 
+// DeleteEvent removes an event from database.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
 
@@ -150,14 +158,17 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// GetEventsDay selects events for one day.
 func (s *Storage) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Day")
 }
 
+// GetEventsWeek selects events for one week.
 func (s *Storage) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Week")
 }
 
+// GetEventsMonth selects events for one month.
 func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Month")
 }
@@ -224,6 +235,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	return events, nil
 }
 
+// GetNotifications returns upcoming event notifications.
 func (s *Storage) GetNotifications(
 	ctx context.Context,
 	currTime time.Time,
@@ -270,6 +282,7 @@ func (s *Storage) GetNotifications(
 	return notifications, nil
 }
 
+// DeleteOldEvents removes events that ended before delTime.
 func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error {
 	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
 	ctx = logger.WithLogStart(ctx, delTime)

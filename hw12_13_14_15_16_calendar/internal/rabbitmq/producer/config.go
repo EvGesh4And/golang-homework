@@ -1,5 +1,6 @@
 package producer
 
+// RabbitMQConf defines RabbitMQ producer configuration.
 type RabbitMQConf struct {
 	URI          string `toml:"uri" env:"URI"`
 	Exchange     string `toml:"exchange" env:"EXCHANGE"`

@@ -11,11 +11,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// App orchestrates application use cases.
 type App struct {
 	storage Storage
 	logger  *slog.Logger
 }
 
+// Storage defines persistence methods used by App.
 type Storage interface {
 	CreateEvent(context.Context, storage.Event) error
 	UpdateEvent(context.Context, uuid.UUID, storage.Event) error
@@ -25,6 +27,7 @@ type Storage interface {
 	GetEventsMonth(context.Context, time.Time) ([]storage.Event, error)
 }
 
+// New creates a new App instance.
 func New(logger *slog.Logger, storage Storage) *App {
 	return &App{
 		logger:  logger,
@@ -32,6 +35,7 @@ func New(logger *slog.Logger, storage Storage) *App {
 	}
 }
 
+// CreateEvent validates and stores a new event.
 func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
 	a.logger.DebugContext(ctx, "попытка создать событие")
@@ -46,6 +50,7 @@ func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
+// UpdateEvent validates and updates an existing event.
 func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
 	a.logger.DebugContext(ctx, "попытка обновить событие")
@@ -60,6 +65,7 @@ func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event
 	return nil
 }
 
+// DeleteEvent removes an event by its ID.
 func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
 	a.logger.DebugContext(ctx, "попытка удалить событие")
@@ -74,6 +80,7 @@ func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// GetEventsDay retrieves events for one day.
 func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	ctx = logger.WithLogMethod(ctx, "GetEventsDay")
 	ctx = logger.WithLogStart(ctx, start)
@@ -86,6 +93,7 @@ func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Even
 	return events, nil
 }
 
+// GetEventsWeek retrieves events for one week.
 func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	ctx = logger.WithLogMethod(ctx, "GetEventsWeek")
 	ctx = logger.WithLogStart(ctx, start)
@@ -98,6 +106,7 @@ func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Eve
 	return events, nil
 }
 
+// GetEventsMonth retrieves events for one month.
 func (a *App) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	ctx = logger.WithLogMethod(ctx, "GetEventsMonth")
 	ctx = logger.WithLogStart(ctx, start)
