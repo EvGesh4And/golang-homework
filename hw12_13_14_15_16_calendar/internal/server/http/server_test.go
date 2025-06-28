@@ -251,7 +251,7 @@ func TestUpdateEvent_InvalidID(t *testing.T) {
 	server.Handler().ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusBadRequest, w.Result().StatusCode)
-	assert.Equal(t, serverpkg.ErrInvalidEventID.Error()+"\n", w.Body.String())
+	assert.Equal(t, "server.http.getEventIDFromBody: "+serverpkg.ErrInvalidEventID.Error()+"\n", w.Body.String())
 }
 
 func TestDeleteEvent_NotFound(t *testing.T) {

@@ -30,11 +30,14 @@ func (h *HandlerMiddleware) Enabled(ctx context.Context, rec slog.Level) bool {
 // Handle enriches the record with context information before logging.
 func (h *HandlerMiddleware) Handle(ctx context.Context, rec slog.Record) error {
 	if c, ok := ctx.Value(key).(logCtx); ok {
-		if c.EventID != uuid.Nil {
-			rec.Add("eventID", c.EventID.String())
+		if c.Component != "" {
+			rec.Add("component", c.Component)
 		}
 		if c.Method != "" {
 			rec.Add("method", c.Method)
+		}
+		if c.EventID != uuid.Nil {
+			rec.Add("eventID", c.EventID.String())
 		}
 		if !c.Start.IsZero() {
 			rec.Add("start", c.Start.Format(time.RFC3339))
