@@ -54,7 +54,7 @@ func (s *Server) checkContentTypeMiddleware(next http.Handler) http.Handler {
 			http.Error(w, server.ErrInvalidContentType.Error(), http.StatusBadRequest)
 			return
 		}
-		s.logger.Debug("валидный Content-Type", "Content-Type", contentType)
+		s.logger.Debug("valid Content-Type", "Content-Type", contentType)
 
 		next.ServeHTTP(w, r)
 	})

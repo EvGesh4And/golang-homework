@@ -12,15 +12,15 @@ type ErrInvalidEvent struct {
 }
 
 func (e *ErrInvalidEvent) Error() string {
-	return fmt.Sprintf("некорректное поле %q: %s", e.Field, e.Message)
+	return fmt.Sprintf("invalid field %q: %s", e.Field, e.Message)
 }
 
 var (
 	// Ошибка с ID.
-	ErrIDRepeated = errors.New("событие с таким ID уже есть в хранилище")
-	ErrIDNotExist = errors.New("события с таким ID не существует")
+	ErrIDRepeated = errors.New("event with such ID already exists in storage")
+	ErrIDNotExist = errors.New("event with such ID does not exist")
 	// Ошибка с временными интервалами.
-	ErrDateBusy = errors.New("данное время уже занято другим событием")
+	ErrDateBusy = errors.New("this time is already occupied by another event")
 	// Ошибка с получем событий в интервале.
-	ErrGetEvents = errors.New("ошибка в ходе получения списка событий")
+	ErrGetEvents = errors.New("error while retrieving events list")
 )

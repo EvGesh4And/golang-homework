@@ -70,31 +70,31 @@ func (e Event) CheckValid() error {
 	if e.ID == uuid.Nil {
 		return &ErrInvalidEvent{
 			Field:   "id",
-			Message: "ID события обязателен",
+			Message: "event ID is required",
 		}
 	}
 	if e.UserID == uuid.Nil {
 		return &ErrInvalidEvent{
 			Field:   "userId",
-			Message: "ID пользователя обязателен",
+			Message: "user ID is required",
 		}
 	}
 	if e.Start.Before(time.Now()) {
 		return &ErrInvalidEvent{
 			Field:   "start",
-			Message: "время начала не может быть в прошлом",
+			Message: "start time cannot be in the past",
 		}
 	}
 	if e.End.Before(e.Start) {
 		return &ErrInvalidEvent{
 			Field:   "end",
-			Message: "время окончания события должно быть после времени начала",
+			Message: "event end time must be after start time",
 		}
 	}
 	if e.TimeBefore < 0 {
 		return &ErrInvalidEvent{
 			Field:   "timeBefore",
-			Message: "время уведомления должно быть положительным",
+			Message: "notification time must be positive",
 		}
 	}
 	return nil
