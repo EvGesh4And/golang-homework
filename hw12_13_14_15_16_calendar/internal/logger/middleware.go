@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -120,9 +119,9 @@ func WrapError(ctx context.Context, err error) error {
 
 	// Extract component from context
 	if compVal := ctx.Value("component"); compVal != nil {
-		log.Println("tut")
+		slog.Info("tut")
 		if component, ok := compVal.(string); ok && component != "" {
-			log.Println("tut2", prefix)
+			slog.Info("tut2", prefix)
 			prefix = component
 		}
 	}
