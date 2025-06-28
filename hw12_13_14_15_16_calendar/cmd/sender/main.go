@@ -52,21 +52,16 @@ func main() {
 
 	// ---------- запуск consumer в отдельной горутине ----------
 	go func() {
-		defer cons.SignalDone()
 		if err := cons.Handle(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			log.Printf("consumer error: %v", err)
 		}
 	}()
 
-	select {
-	case <-ctx.Done():
-		// ждём SIGINT/SIGTERM
-	case <-cons.Done():
-		// закрытие канала брокера
-	}
+	// ждём SIGINT/SIGTERM
+	<-ctx.Done()
 
 	// ---------- даём времени на корректное закрытие ----------
-	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := cons.Shutdown(); err != nil {
@@ -74,5 +69,4 @@ func main() {
 	}
 
 	log.Print("sender shutdown complete")
-	_ = shCtx // т.к. Shutdown блокируется лишь до выполнения <-c.done, тайм-аут здесь символический
 }

@@ -17,7 +17,6 @@ type RabbitConsumer struct {
 	conn      *amqp.Connection
 	channel   *amqp.Channel
 	tag       string
-	done      chan error
 	queue     amqp.Queue
 	logger    *slog.Logger
 	ctx       context.Context
@@ -29,7 +28,6 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 	ctx, cancel := context.WithCancel(ctx)
 	c := &RabbitConsumer{
 		tag:       cfg.ConsumerTag,
-		done:      make(chan error),
 		logger:    lg,
 		ctx:       ctx,
 		cancel:    cancel,
@@ -229,21 +227,7 @@ func (c *RabbitConsumer) Shutdown() error {
 
 	c.cancel()
 
-	<-c.done // ждём завершения Handle
-
 	return errors.Join(errs...)
-}
-
-func (c *RabbitConsumer) SignalDone() {
-	select {
-	case <-c.done:
-	default:
-		close(c.done)
-	}
-}
-
-func (c *RabbitConsumer) Done() <-chan error {
-	return c.done
 }
 
 func (c *RabbitConsumer) startReconnectLoop(ctx context.Context, cfg RabbitMQConf) {
