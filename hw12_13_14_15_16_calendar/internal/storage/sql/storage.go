@@ -46,7 +46,7 @@ func (s *Storage) Connect(ctx context.Context) error {
 			return nil
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к PostgreSQL: %v", i, err)
+		log.Printf("Attempt %d: failed to connect to PostgreSQL: %v", i, err)
 
 		select {
 		case <-ctx.Done():

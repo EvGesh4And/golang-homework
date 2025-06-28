@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	// ---------- настройка логирования ----------
+	// ---------- logger setup ----------
 	cfg := NewConfig()
 	child, closer, err := setupLogger(cfg)
 	if err != nil {
@@ -53,9 +53,9 @@ func main() {
 		}
 	}()
 
-	<-ctx.Done() // ждём SIGINT/SIGTERM
+	<-ctx.Done() // waiting for SIGINT/SIGTERM
 
-	// ---------- даём немного времени на корректное закрытие ----------
+	// ---------- allow some time for graceful shutdown ----------
 	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -63,6 +63,6 @@ func main() {
 		log.Printf("error during shutdown: %v", err)
 	}
 
-	log.Print("sender завершился корректно")
+	log.Print("sender finished gracefully")
 	_ = shCtx // т.к. Shutdown блокируется лишь до выполнения <-c.done, тайм-аут здесь символический
 }

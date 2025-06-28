@@ -24,17 +24,17 @@ func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
 	case "file":
 		filePath := cfg.Logger.Path
 		if filePath == "" {
-			filePath = "calendar.log" // путь по умолчанию, если не задан
+			filePath = "calendar.log" // default path if not specified
 		}
 
 		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
-			log.Printf("не удалось открыть лог-файл %s: %s", filePath, err.Error())
+			log.Printf("failed to open log file %s: %s", filePath, err.Error())
 			return nil, nil, err
 		}
 		globalLogger = logger.New(cfg.Logger.Level, logFile)
 	default:
-		log.Printf("неизвестный режим логгера: %s, используется консоль", cfg.Logger.Mod)
+		log.Printf("unknown logger mode: %s, using console", cfg.Logger.Mod)
 		globalLogger = logger.New(cfg.Logger.Level, os.Stdout)
 	}
 

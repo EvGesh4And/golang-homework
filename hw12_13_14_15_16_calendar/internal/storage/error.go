@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Ошибка в полях события.
+// Invalid event fields.
 type ErrInvalidEvent struct {
 	Field   string
 	Message string
@@ -16,11 +16,11 @@ func (e *ErrInvalidEvent) Error() string {
 }
 
 var (
-	// Ошибка с ID.
+	// Error with ID.
 	ErrIDRepeated = errors.New("event with this ID already exists")
 	ErrIDNotExist = errors.New("event with this ID does not exist")
-	// Ошибка с временными интервалами.
+	// Error with time intervals.
 	ErrDateBusy = errors.New("time slot already occupied by another event")
-	// Ошибка с получем событий в интервале.
+	// Error retrieving events in interval.
 	ErrGetEvents = errors.New("error retrieving list of events")
 )
