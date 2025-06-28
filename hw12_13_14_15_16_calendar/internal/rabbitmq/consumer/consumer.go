@@ -211,7 +211,9 @@ outer:
 				}
 				c.logger.InfoContext(ctx, "notification unmarshalled", "notification", notification)
 
-				d.Ack(false)
+				if err := c.ackDelivery(ctx, d); err != nil {
+					return err
+				}
 
 				c.logger.InfoContext(ctx, "notification event", "notification", notification)
 			}
@@ -236,6 +238,14 @@ func (c *RabbitConsumer) Shutdown() error {
 	<-c.done
 
 	return errors.Join(errs...)
+}
+
+func (c *RabbitConsumer) ackDelivery(ctx context.Context, d amqp.Delivery) error {
+	if err := d.Ack(false); err != nil {
+		c.logger.ErrorContext(ctx, "failed to acknowledge message", slog.String("error", err.Error()))
+		return fmt.Errorf("RabbitConsumer.Handle: ack: %w", err)
+	}
+	return nil
 }
 
 func (c *RabbitConsumer) startReconnectLoop(ctx context.Context, cfg RabbitMQConf) {
