@@ -50,7 +50,7 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Applic
 func (s *Server) Start() error {
 	err := s.httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
-		return fmt.Errorf("ошибка в работе сервера: %w", err)
+		return fmt.Errorf("server run error: %w", err)
 	}
 	return nil
 }

@@ -4,27 +4,27 @@ import "errors"
 
 var (
 	// ErrInvalidContentType means request Content-Type is not application/json.
-	ErrInvalidContentType = errors.New("Content-Type должен быть application/json")
+	ErrInvalidContentType = errors.New("Content-Type must be application/json")
 	// ErrMissingEvent occurs when request body lacks event data.
-	ErrMissingEvent = errors.New("отсутствует событие в запросе")
+	ErrMissingEvent = errors.New("missing event in request")
 	// ErrMissingEventID occurs when event ID is not provided.
-	ErrMissingEventID = errors.New("отсутствует ID события в запросе")
+	ErrMissingEventID = errors.New("missing event ID in request")
 	// ErrInvalidEventID indicates an invalid event ID value.
-	ErrInvalidEventID = errors.New("некорректный ID события")
+	ErrInvalidEventID = errors.New("invalid event ID")
 	// ErrInvalidUserID indicates an invalid user ID value.
-	ErrInvalidUserID = errors.New("некорректный ID пользователя")
+	ErrInvalidUserID = errors.New("invalid user ID")
 	// ErrInvalidEventData signals incorrect event data.
-	ErrInvalidEventData = errors.New("некорректные данные события")
+	ErrInvalidEventData = errors.New("invalid event data")
 	// ErrInvalidPeriod denotes an invalid period value.
-	ErrInvalidPeriod = errors.New("некорректный период")
+	ErrInvalidPeriod = errors.New("invalid period")
 	// ErrEventRetrieval is returned when events cannot be retrieved.
-	ErrEventRetrieval = errors.New("ошибка при получении событий")
+	ErrEventRetrieval = errors.New("error retrieving events")
 	// ErrInvalidStartPeriod indicates start date has invalid format.
-	ErrInvalidStartPeriod = errors.New("некорректная дата начала периода")
+	ErrInvalidStartPeriod = errors.New("invalid period start date")
 	// ErrCreateEvent reports a failure during event creation.
-	ErrCreateEvent = errors.New("ошибка при создании события")
+	ErrCreateEvent = errors.New("error creating event")
 	// ErrUpdateEvent reports a failure during event update.
-	ErrUpdateEvent = errors.New("ошибка при обновлении события")
+	ErrUpdateEvent = errors.New("error updating event")
 	// ErrDeleteEvent reports a failure during event deletion.
-	ErrDeleteEvent = errors.New("ошибка при удалении события")
+	ErrDeleteEvent = errors.New("error deleting event")
 )

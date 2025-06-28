@@ -33,7 +33,7 @@ func New(logger *slog.Logger) *Storage {
 // CreateEvent adds a new event to storage.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	if err := ctx.Err(); err != nil {
 		return logger.WrapError(ctx, err)
@@ -50,13 +50,13 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	}
 
 	s.eventMap[event.ID] = event
-	s.logger.InfoContext(ctx, "успешно создано событие")
+	s.logger.InfoContext(ctx, "event created successfully")
 	return nil
 }
 
 // UpdateEvent replaces an existing event.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	if err := ctx.Err(); err != nil {
 		return logger.WrapError(ctx, err)
@@ -75,13 +75,13 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	}
 
 	s.eventMap[id] = newEvent
-	s.logger.InfoContext(ctx, "успешно обновлено событие")
+	s.logger.InfoContext(ctx, "event updated successfully")
 	return nil
 }
 
 // DeleteEvent removes an event from storage.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	if err := ctx.Err(); err != nil {
 		return logger.WrapError(ctx, err)
@@ -98,7 +98,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	s.intervals.Remove(event.GetInterval())
 	delete(s.eventMap, id)
 
-	s.logger.InfoContext(ctx, "успешно удалено событие")
+	s.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get events for interval")
 
 	if err := ctx.Err(); err != nil {
 		return nil, logger.WrapError(ctx, err)
@@ -152,7 +152,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		res = append(res, event)
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(res))
+	s.logger.InfoContext(ctx, "events retrieved successfully", "count", len(res))
 	return res, nil
 }
 

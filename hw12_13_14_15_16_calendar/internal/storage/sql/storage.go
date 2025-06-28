@@ -41,25 +41,25 @@ func (s *Storage) Connect(ctx context.Context) error {
 	for i := 1; i <= maxAttempts; i++ {
 		s.db, err = sql.Open("pgx", s.dsn)
 		if err != nil {
-			err = fmt.Errorf("создание пула соединений: %w", err)
+			err = fmt.Errorf("creating connection pool: %w", err)
 		} else if pingErr := s.db.PingContext(ctx); pingErr != nil {
-			err = fmt.Errorf("установка соединения: %w", pingErr)
+			err = fmt.Errorf("establishing connection: %w", pingErr)
 		} else {
 			// Успешное подключение
 			return nil
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к PostgreSQL: %v", i, err)
+		log.Printf("Attempt %d: failed to connect to PostgreSQL: %v", i, err)
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+			return fmt.Errorf("connection aborted by context: %w", ctx.Err())
 		case <-time.After(retryDelay):
 			// Пауза перед следующей попыткой
 		}
 	}
 
-	return fmt.Errorf("не удалось подключиться к PostgreSQL после %d попыток: %w", maxAttempts, err)
+	return fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err)
 }
 
 // Close closes database connection.
@@ -75,11 +75,11 @@ func (s *Storage) Migrate(migrate string) (err error) {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("установка диалекта: %w", err)
+		return fmt.Errorf("setting dialect: %w", err)
 	}
 
 	if err := goose.Up(s.db, migrate); err != nil {
-		return fmt.Errorf("ошибка миграции: %w", err)
+		return fmt.Errorf("migration error: %w", err)
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func (s *Storage) Migrate(migrate string) (err error) {
 // CreateEvent inserts a new event into database.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	query := `
         INSERT INTO events (id, title, description, user_id, start_time, end_time, time_before)
@@ -107,14 +107,14 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	if err != nil {
 		return logger.WrapError(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно создано событие")
+	s.logger.InfoContext(ctx, "event created successfully")
 	return nil
 }
 
 // UpdateEvent updates an existing event in database.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	query := `
         UPDATE events
@@ -135,7 +135,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	if err != nil {
 		return logger.WrapError(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно обновлено событие")
+	s.logger.InfoContext(ctx, "event updated successfully")
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
 
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	query := `
         DELETE FROM events
@@ -154,7 +154,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return logger.WrapError(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно удалено событие")
+	s.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
 }
 
@@ -187,7 +187,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get events for interval")
 
 	query := `
         SELECT id, title, description, user_id, start_time, end_time, time_before
@@ -230,7 +230,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		return nil, logger.WrapError(ctx, err)
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
+	s.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 
 	return events, nil
 }
@@ -244,7 +244,7 @@ func (s *Storage) GetNotifications(
 	ctx = logger.WithLogMethod(ctx, "GetNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get notifications for interval")
 
 	query := `
         SELECT id, title, start_time, user_id
@@ -277,7 +277,7 @@ func (s *Storage) GetNotifications(
 		return nil, logger.WrapError(ctx, err)
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+	s.logger.InfoContext(ctx, "notifications retrieved successfully", "count", len(notifications))
 
 	return notifications, nil
 }
@@ -287,7 +287,7 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
 	ctx = logger.WithLogStart(ctx, delTime)
 
-	s.logger.DebugContext(ctx, "попытка удалить старые события")
+	s.logger.DebugContext(ctx, "attempting to delete old events")
 
 	query := `
         DELETE FROM events
@@ -303,9 +303,9 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 		return logger.WrapError(ctx, err)
 	}
 	if count > 0 {
-		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
+		s.logger.InfoContext(ctx, "old events deleted successfully", "count", count)
 	} else {
-		s.logger.InfoContext(ctx, "нет старых событий для удаления")
+		s.logger.InfoContext(ctx, "no old events to delete")
 	}
 	return nil
 }
