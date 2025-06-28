@@ -44,6 +44,7 @@ linters-settings:
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
           - github.com/onsi/ginkgo/v2
           - github.com/onsi/gomega
+          - github.com/streadway/amqp
 issues:
   exclude-rules:
     - path: _test\.go
