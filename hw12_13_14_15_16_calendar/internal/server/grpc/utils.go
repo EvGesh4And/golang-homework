@@ -30,6 +30,7 @@ func getEventFromBody[T interface{ GetEvent() *pb.Event }](
 	log *slog.Logger,
 	req T,
 ) (storage.Event, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getEventFromBody")
 	log.DebugContext(ctx, "attempting to extract event from request body")
 	eventPB := req.GetEvent()
@@ -62,6 +63,7 @@ func getEventIDFromBody[T interface{ GetId() string }](
 	log *slog.Logger,
 	req T,
 ) (uuid.UUID, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getEventIDFromBody")
 	log.DebugContext(ctx, "attempting to extract event ID from request parameters")
 	id := req.GetId()
@@ -82,6 +84,7 @@ func getStartTime[T interface{ GetStart() *timestamppb.Timestamp }](
 	log *slog.Logger,
 	req T,
 ) (time.Time, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getStartTime")
 	log.DebugContext(ctx, "attempting to extract start time from request parameters")
 	startTimestamp := req.GetStart()

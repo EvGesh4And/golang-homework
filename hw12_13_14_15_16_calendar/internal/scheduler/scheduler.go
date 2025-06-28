@@ -31,6 +31,11 @@ type Scheduler struct {
 	logger    *slog.Logger
 }
 
+func (s *Scheduler) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "scheduler")
+	return logger.WithLogMethod(ctx, method)
+}
+
 // NewScheduler creates a new Scheduler instance.
 func NewScheduler(logger *slog.Logger, storage Storage, publisher Publisher, cfg NotificationsConf) *Scheduler {
 	return &Scheduler{
@@ -44,7 +49,7 @@ func NewScheduler(logger *slog.Logger, storage Storage, publisher Publisher, cfg
 
 // Start runs the scheduler loop until the context is cancelled.
 func (s *Scheduler) Start(ctx context.Context) {
-	ctx = logger.WithLogMethod(ctx, "Start")
+	ctx = s.setLogCompMeth(ctx, "Start")
 
 	s.logger.InfoContext(ctx, "start scheduler")
 
@@ -69,7 +74,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 
 // PublishNotifications sends notifications and removes old events.
 func (s *Scheduler) PublishNotifications(ctx context.Context) {
-	ctx = logger.WithLogMethod(ctx, "PublishNotifications")
+	ctx = s.setLogCompMeth(ctx, "PublishNotifications")
 
 	currTime := time.Now()
 	ctx = logger.WithLogStart(ctx, currTime)

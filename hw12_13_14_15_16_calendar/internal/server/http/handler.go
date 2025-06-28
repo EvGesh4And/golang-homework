@@ -26,7 +26,7 @@ func (s *Server) routes() http.Handler {
 
 // CreateEvent handles event creation request.
 func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "CreateEvent")
+	ctx := s.setLogCompMeth(r.Context(), "CreateEvent")
 
 	event, err := s.getEventFromBody(ctx, r)
 	if err != nil {
@@ -51,7 +51,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 // UpdateEvent handles event update request.
 func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "UpdateEvent")
+	ctx := s.setLogCompMeth(r.Context(), "UpdateEvent")
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
@@ -85,7 +85,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 // DeleteEvent handles event deletion request.
 func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "DeleteEvent")
+	ctx := s.setLogCompMeth(r.Context(), "DeleteEvent")
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *Server) handleGetEvents(
 	period string,
 	getEventsFunc func(ctx context.Context, start time.Time) ([]storage.Event, error),
 ) {
-	ctx := logger.WithLogMethod(r.Context(), "GetEvents"+period)
+	ctx := s.setLogCompMeth(r.Context(), "GetEvents"+period)
 
 	startStr := r.URL.Query().Get("start")
 	start, err := time.Parse(time.RFC3339, startStr)
