@@ -118,8 +118,9 @@ func WrapError(ctx context.Context, err error) error {
 	var prefix string
 
 	// Extract component from context
+	slog.Info("tut")
 	if compVal := ctx.Value("component"); compVal != nil {
-		slog.Info("tut")
+		slog.Info("tut1")
 		if component, ok := compVal.(string); ok && component != "" {
 			slog.Info("tut2", prefix)
 			prefix = component
