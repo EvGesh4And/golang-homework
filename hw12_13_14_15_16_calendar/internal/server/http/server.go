@@ -11,11 +11,10 @@ import (
 )
 
 // Server provides HTTP access to the calendar application.
-type Server struct { // TODO
+type Server struct {
 	logger     *slog.Logger
 	app        server.Application
 	httpServer *http.Server
-	ErrCh      chan error
 	handler    http.Handler
 }
 
@@ -44,8 +43,6 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Applic
 	}
 	s.httpServer = httpServer
 	s.handler = wrapped
-
-	s.ErrCh = make(chan error, 1)
 	return s
 }
 
