@@ -21,6 +21,11 @@ type CalendarServer struct {
 	lis net.Listener
 }
 
+func (s *CalendarServer) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
+	return logger.WithLogMethod(ctx, method)
+}
+
 // NewServerGRPC creates a new gRPC calendar server.
 func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application) *CalendarServer {
 	return &CalendarServer{
@@ -32,7 +37,7 @@ func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application
 
 // CreateEvent handles creation of a new event via gRPC.
 func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	ctx = s.setLogCompMeth(ctx, "CreateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
@@ -53,7 +58,7 @@ func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq
 
 // UpdateEvent handles event updates via gRPC.
 func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
+	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
@@ -78,7 +83,7 @@ func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq
 
 // DeleteEvent handles deletion of an event via gRPC.
 func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
+	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 	id, err := getEventIDFromBody(ctx, s.logger, req)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
@@ -117,7 +122,7 @@ func (s *CalendarServer) getEvents(
 	req *pb.GetEventsReq,
 	getFunc func(context.Context, time.Time) ([]storage.Event, error),
 ) (*pb.GetEventsResp, error) {
-	ctx = logger.WithLogMethod(ctx, methodName)
+	ctx = s.setLogCompMeth(ctx, methodName)
 
 	start, err := getStartTime(ctx, s.logger, req)
 	if err != nil {

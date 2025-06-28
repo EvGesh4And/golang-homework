@@ -17,6 +17,11 @@ type App struct {
 	logger  *slog.Logger
 }
 
+func (a *App) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "app")
+	return logger.WithLogMethod(ctx, method)
+}
+
 // Storage defines persistence methods used by App.
 type Storage interface {
 	CreateEvent(context.Context, storage.Event) error
@@ -37,14 +42,14 @@ func New(logger *slog.Logger, storage Storage) *App {
 
 // CreateEvent validates and stores a new event.
 func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	ctx = a.setLogCompMeth(ctx, "CreateEvent")
 	a.logger.DebugContext(ctx, "attempting to create event")
 	if err := event.CheckValid(); err != nil {
-		return fmt.Errorf("app.CreateEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	err := a.storage.CreateEvent(ctx, event)
 	if err != nil {
-		return fmt.Errorf("app.CreateEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event created successfully")
 	return nil
@@ -52,14 +57,14 @@ func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
 
 // UpdateEvent validates and updates an existing event.
 func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
+	ctx = a.setLogCompMeth(ctx, "UpdateEvent")
 	a.logger.DebugContext(ctx, "attempting to update event")
 	if err := event.CheckValid(); err != nil {
-		return fmt.Errorf("app.UpdateEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	err := a.storage.UpdateEvent(ctx, id, event)
 	if err != nil {
-		return fmt.Errorf("app.UpdateEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event updated successfully")
 	return nil
@@ -67,14 +72,14 @@ func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event
 
 // DeleteEvent removes an event by its ID.
 func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
+	ctx = a.setLogCompMeth(ctx, "DeleteEvent")
 	a.logger.DebugContext(ctx, "attempting to delete event")
 	if err := ctx.Err(); err != nil {
-		return fmt.Errorf("storage:memory.CreateEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	err := a.storage.DeleteEvent(ctx, id)
 	if err != nil {
-		return fmt.Errorf("app.DeleteEvent: %w", err)
+		return logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
@@ -82,12 +87,12 @@ func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 // GetEventsDay retrieves events for one day.
 func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	ctx = logger.WithLogMethod(ctx, "GetEventsDay")
+	ctx = a.setLogCompMeth(ctx, "GetEventsDay")
 	ctx = logger.WithLogStart(ctx, start)
 	a.logger.DebugContext(ctx, "attempting to get events for day")
 	events, err := a.storage.GetEventsDay(ctx, start)
 	if err != nil {
-		return nil, fmt.Errorf("app.GetEventsDay: %w", err)
+		return nil, logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil
@@ -95,12 +100,12 @@ func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Even
 
 // GetEventsWeek retrieves events for one week.
 func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	ctx = logger.WithLogMethod(ctx, "GetEventsWeek")
+	ctx = a.setLogCompMeth(ctx, "GetEventsWeek")
 	ctx = logger.WithLogStart(ctx, start)
 	a.logger.DebugContext(ctx, "attempting to get events for week")
 	events, err := a.storage.GetEventsWeek(ctx, start)
 	if err != nil {
-		return nil, fmt.Errorf("app.GetEventsWeek: %w", err)
+		return nil, logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil
@@ -108,12 +113,12 @@ func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Eve
 
 // GetEventsMonth retrieves events for one month.
 func (a *App) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
-	ctx = logger.WithLogMethod(ctx, "GetEventsMonth")
+	ctx = a.setLogCompMeth(ctx, "GetEventsMonth")
 	ctx = logger.WithLogStart(ctx, start)
 	a.logger.DebugContext(ctx, "attempting to get events for month")
 	events, err := a.storage.GetEventsMonth(ctx, start)
 	if err != nil {
-		return nil, fmt.Errorf("app.GetEventsMonth: %w", err)
+		return nil, logger.WrapError(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil

@@ -25,6 +25,11 @@ type RabbitConsumer struct {
 	reconnect chan struct{}
 }
 
+func (c *RabbitConsumer) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "rabbitmq.consumer")
+	return logger.WithLogMethod(ctx, method)
+}
+
 // NewRabbitConsumer creates and configures a RabbitMQ consumer.
 func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (*RabbitConsumer, error) {
 	ctx, cancel := context.WithCancel(ctx)
@@ -55,7 +60,7 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 }
 
 func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error {
-	ctx = logger.WithLogMethod(ctx, "connectWithRetry")
+	ctx = c.setLogCompMeth(ctx, "connectWithRetry")
 	const (
 		maxAttempts = 5
 		retryDelay  = 2 * time.Second
@@ -75,14 +80,14 @@ func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error
 		select {
 		case <-ctx.Done():
 			c.logger.InfoContext(ctx, "connection cancelled", "error", ctx.Err())
-			return fmt.Errorf("RabbitConsumer.connectWithRetry: connection cancelled: %w", ctx.Err())
+			return logger.WrapError(ctx, fmt.Errorf("connection cancelled: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Pause before the next attempt
 		}
 	}
 	if err != nil {
-		return fmt.Errorf("RabbitConsumer.connectWithRetry: failed to connect to RabbitMQ after %d attempts: %w",
-			maxAttempts, err)
+		return logger.WrapError(ctx, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w",
+			maxAttempts, err))
 	}
 
 	c.logger.InfoContext(ctx, "connection established")
@@ -96,19 +101,19 @@ func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error
 }
 
 func (c *RabbitConsumer) initChannel(ctx context.Context) error {
-	ctx = logger.WithLogMethod(ctx, "initChannel")
+	ctx = c.setLogCompMeth(ctx, "initChannel")
 	c.logger.DebugContext(ctx, "trying to initialize channel")
 	var err error
 	c.channel, err = c.conn.Channel()
 	if err != nil {
-		return fmt.Errorf("RabbitConsumer.initChannel: channel: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("channel: %w", err))
 	}
 	c.logger.InfoContext(ctx, "channel initialized")
 	return nil
 }
 
 func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg RabbitMQConf) error {
-	ctx = logger.WithLogMethod(ctx, "declareExchangeQueueBind")
+	ctx = c.setLogCompMeth(ctx, "declareExchangeQueueBind")
 
 	c.logger.DebugContext(ctx, "try declaring exchange", "type", cfg.ExchangeType, "name", cfg.Exchange)
 
@@ -121,7 +126,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 		false,
 		nil,
 	); err != nil {
-		return fmt.Errorf("RabbitConsumer.declareExchangeQueueBind: exchange declare: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("exchange declare: %w", err))
 	}
 
 	c.logger.InfoContext(ctx, "exchange declared")
@@ -132,7 +137,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 		cfg.Queue, true, false, false, false, nil,
 	)
 	if err != nil {
-		return fmt.Errorf("RabbitConsumer.declareExchangeQueueBind: queue declare: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("queue declare: %w", err))
 	}
 	c.queue = q
 
@@ -144,7 +149,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 	if err := c.channel.QueueBind(
 		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,
 	); err != nil {
-		return fmt.Errorf("RabbitConsumer.declareExchangeQueueBind: queue bind: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("queue bind: %w", err))
 	}
 
 	c.logger.InfoContext(ctx, "queue bound")
@@ -156,14 +161,14 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
 	defer close(c.done)
 
-	ctx = logger.WithLogMethod(ctx, "Handle")
+	ctx = c.setLogCompMeth(ctx, "Handle")
 
 outer:
 	for {
 		select {
 		case <-ctx.Done():
 			c.logger.InfoContext(ctx, "context cancelled")
-			return fmt.Errorf("RabbitConsumer.Handle: context cancelled: %w", ctx.Err())
+			return logger.WrapError(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
 		case <-c.reconnect:
 		}
 
@@ -179,7 +184,7 @@ outer:
 			nil,
 		)
 		if err != nil {
-			return fmt.Errorf("RabbitConsumer.Handle: queue consume: %w", err)
+			return logger.WrapError(ctx, fmt.Errorf("queue consume: %w", err))
 		}
 
 		c.logger.InfoContext(ctx, "messages are being consumed")
@@ -188,7 +193,7 @@ outer:
 			select {
 			case <-ctx.Done():
 				c.logger.InfoContext(ctx, "context cancelled")
-				return fmt.Errorf("RabbitConsumer.Handle: context cancelled: %w", ctx.Err())
+				return logger.WrapError(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
 			case d, ok := <-deliveries:
 				if !ok {
 					c.logger.InfoContext(ctx, "deliveries channel closed")
@@ -207,7 +212,7 @@ outer:
 				c.logger.DebugContext(ctx, "try unmarshalling notification")
 				var notification storage.Notification
 				if err := json.Unmarshal(d.Body, &notification); err != nil {
-					return fmt.Errorf("RabbitConsumer.Handle: error during unmarshal: %w", err)
+					return logger.WrapError(ctx, fmt.Errorf("error during unmarshal: %w", err))
 				}
 				c.logger.InfoContext(ctx, "notification unmarshalled", "notification", notification)
 
@@ -243,7 +248,7 @@ func (c *RabbitConsumer) Shutdown() error {
 func (c *RabbitConsumer) ackDelivery(ctx context.Context, d amqp.Delivery) error {
 	if err := d.Ack(false); err != nil {
 		c.logger.ErrorContext(ctx, "failed to acknowledge message", slog.String("error", err.Error()))
-		return fmt.Errorf("RabbitConsumer.Handle: ack: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("ack: %w", err))
 	}
 	return nil
 }

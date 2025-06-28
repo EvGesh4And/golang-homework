@@ -31,8 +31,14 @@ func New(logger *slog.Logger) *Storage {
 }
 
 // CreateEvent adds a new event to storage.
+func (s *Storage) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "storage.memory")
+	return logger.WithLogMethod(ctx, method)
+}
+
+// CreateEvent adds a new event to storage.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	ctx = s.setLogCompMeth(ctx, "CreateEvent")
 	s.logger.DebugContext(ctx, "attempting to create event")
 
 	if err := ctx.Err(); err != nil {
@@ -56,6 +62,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 
 // UpdateEvent replaces an existing event.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
+	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
 	s.logger.DebugContext(ctx, "attempting to update event")
 
 	if err := ctx.Err(); err != nil {
@@ -81,6 +88,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 // DeleteEvent removes an event from storage.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
+	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	if err := ctx.Err(); err != nil {
@@ -128,7 +136,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		d = time.Hour * 24 * 30
 	}
 
-	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
+	ctx = s.setLogCompMeth(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
 	s.logger.DebugContext(ctx, "attempting to get events for interval")
