@@ -49,7 +49,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			s.publisher.Close()
-			s.logger.InfoContext(ctx, "Scheduler остановлен")
+			s.logger.InfoContext(ctx, "Scheduler stopped")
 			return
 		case <-ticker.C:
 			s.PublishNotifications(ctx)
@@ -62,34 +62,34 @@ func (s *Scheduler) PublishNotifications(ctx context.Context) {
 	ctx = logger.WithLogMethod(ctx, "PublishNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
-	s.logger.DebugContext(ctx, "попытка опубликовать уведомления")
-	s.logger.DebugContext(ctx, "попытка получить уведомления")
+	s.logger.DebugContext(ctx, "attempting to publish notifications")
+	s.logger.DebugContext(ctx, "attempting to fetch notifications")
 
 	notifications, err := s.storage.GetNotifications(ctx, currTime, s.tick)
 	if err != nil {
-		s.logger.ErrorContext(ctx, "ошибка получения уведомлений", "error", err)
+		s.logger.ErrorContext(ctx, "error retrieving notifications", "error", err)
 		return
 	}
-	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+	s.logger.InfoContext(ctx, "notifications retrieved successfully", "count", len(notifications))
 	for _, n := range notifications {
 		json, err := json.Marshal(n)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "ошибка сериализации уведомления", "error", err)
+			s.logger.ErrorContext(ctx, "error serializing notification", "error", err)
 			continue
 		}
 		if err := s.publisher.Publish(ctx, string(json)); err != nil {
-			s.logger.ErrorContext(ctx, "ошибка публикации уведомления", "error", err)
+			s.logger.ErrorContext(ctx, "error publishing notification", "error", err)
 			continue
 		}
-		s.logger.InfoContext(ctx, "опубликовано уведомление", "id", n.ID, "title", n.Title)
+		s.logger.InfoContext(ctx, "notification published", "id", n.ID, "title", n.Title)
 	}
 
-	s.logger.InfoContext(ctx, "события успешно опубликованы")
+	s.logger.InfoContext(ctx, "events successfully published")
 
-	s.logger.DebugContext(ctx, "попытка удалить старые события")
+	s.logger.DebugContext(ctx, "attempting to delete old events")
 	err = s.storage.DeleteOldEvents(ctx, currTime.Add(-s.EventTTL))
 	if err != nil {
-		s.logger.ErrorContext(ctx, "ошибка удаления старых событий", "error", err)
+		s.logger.ErrorContext(ctx, "error deleting old events", "error", err)
 		return
 	}
 }

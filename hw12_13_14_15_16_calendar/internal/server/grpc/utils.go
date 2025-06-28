@@ -31,7 +31,7 @@ func getEventFromBody[T interface{ GetEvent() *pb.Event }](
 	req T,
 ) (storage.Event, error) {
 	ctx = logger.WithLogMethod(ctx, "getEventFromBody")
-	log.DebugContext(ctx, "попытка извлечь событие из тела запроса")
+	log.DebugContext(ctx, "attempting to extract event from request body")
 	eventPB := req.GetEvent()
 	if eventPB == nil {
 		return storage.Event{}, logger.WrapError(ctx, server.ErrMissingEvent)
@@ -63,7 +63,7 @@ func getEventIDFromBody[T interface{ GetId() string }](
 	req T,
 ) (uuid.UUID, error) {
 	ctx = logger.WithLogMethod(ctx, "getEventIDFromBody")
-	log.DebugContext(ctx, "попытка извлечь ID события из параметров запроса")
+	log.DebugContext(ctx, "attempting to extract event ID from request params")
 	id := req.GetId()
 	if id == "" {
 		return uuid.Nil, logger.WrapError(ctx, server.ErrMissingEventID)
@@ -73,7 +73,7 @@ func getEventIDFromBody[T interface{ GetId() string }](
 		return uuid.Nil, logger.WrapError(ctx, server.ErrInvalidEventID)
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
-	log.DebugContext(ctx, "успешно извлечён ID из параметров запроса")
+	log.DebugContext(ctx, "event ID extracted from request params")
 	return uuID, nil
 }
 
@@ -83,13 +83,13 @@ func getStartTime[T interface{ GetStart() *timestamppb.Timestamp }](
 	req T,
 ) (time.Time, error) {
 	ctx = logger.WithLogMethod(ctx, "getStartTime")
-	log.DebugContext(ctx, "попытка извлечь время начала из параметров запроса")
+	log.DebugContext(ctx, "attempting to extract start time from request params")
 	startTimestamp := req.GetStart()
 	if startTimestamp == nil {
 		return time.Time{}, logger.WrapError(ctx, server.ErrInvalidStartPeriod)
 	}
 	start := startTimestamp.AsTime()
 	ctx = logger.WithLogStart(ctx, start)
-	log.InfoContext(ctx, "успешно извлечено время начала из параметров запроса")
+	log.InfoContext(ctx, "start time extracted from request params")
 	return start, nil
 }

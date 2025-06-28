@@ -44,9 +44,9 @@ func main() {
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища sql: %s", err)
+			log.Printf("error closing sql storage: %s", err)
 		} else {
-			log.Print("хранилище sql успешно закрыто")
+			log.Print("sql storage closed successfully")
 		}
 	}()
 
@@ -57,14 +57,14 @@ func main() {
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия pubsub: %s", err)
+			log.Printf("error closing pubsub: %s", err)
 		} else {
-			log.Print("pubsub успешно закрыт")
+			log.Print("pubsub closed successfully")
 		}
 	}()
 
 	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
 
 	scheduler.Start(ctx)
-	log.Print("scheduler завершился корректно...")
+	log.Print("scheduler finished gracefully...")
 }

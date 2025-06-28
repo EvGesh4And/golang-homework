@@ -36,7 +36,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	ctx = logger.WithLogEventID(ctx, event.ID)
 
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	if err := s.app.CreateEvent(ctx, event); err != nil {
 		s.checkError(w, err, server.ErrCreateEvent)
@@ -44,7 +44,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно создано")
+	s.logger.InfoContext(ctx, "event successfully created")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -69,7 +69,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	// Поля ID у события может быть пустым
 	event.ID = uuID
 
-	s.logger.DebugContext(ctx, "попытка обновления события")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	if err := s.app.UpdateEvent(ctx, uuID, event); err != nil {
 		s.checkError(w, err, server.ErrUpdateEvent)
@@ -77,7 +77,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно обновлено")
+	s.logger.InfoContext(ctx, "event successfully updated")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -93,7 +93,7 @@ func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	ctx = logger.WithLogEventID(ctx, uuID)
 
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	if err := s.app.DeleteEvent(ctx, uuID); err != nil {
 		s.checkError(w, err, server.ErrDeleteEvent)
@@ -101,7 +101,7 @@ func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно удалено")
+	s.logger.InfoContext(ctx, "event successfully deleted")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -133,7 +133,7 @@ func (s *Server) handleGetEvents(
 		return
 	}
 
-	s.logger.DebugContext(ctx, "попытка получить события")
+	s.logger.DebugContext(ctx, "attempting to get events")
 
 	events, err := getEventsFunc(r.Context(), start)
 	if err != nil {
@@ -147,7 +147,7 @@ func (s *Server) handleGetEvents(
 		eventsDTO[i] = storage.ToDTO(events[i])
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
+	s.logger.InfoContext(ctx, "events successfully retrieved", "count", len(events))
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(eventsDTO)
 }

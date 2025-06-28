@@ -44,9 +44,9 @@ func main() {
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища %s: %s", cfg.Storage.Mod, err)
+			log.Printf("error closing %s storage: %s", cfg.Storage.Mod, err)
 		} else {
-			log.Printf("хранилище %s успешно закрыто", cfg.Storage.Mod)
+			log.Printf("storage %s closed successfully", cfg.Storage.Mod)
 		}
 	}()
 

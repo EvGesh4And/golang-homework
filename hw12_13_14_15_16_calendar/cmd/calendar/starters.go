@@ -45,12 +45,12 @@ func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
 
 		logFile, err = os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
-			log.Printf("не удалось открыть лог-файл %s: %s", filePath, err.Error())
+			log.Printf("failed to open log file %s: %s", filePath, err.Error())
 			return nil, nil, err
 		}
 		globalLogger = logger.New(cfg.Logger.Level, logFile)
 	default:
-		log.Printf("неизвестный режим логгера: %s, используется консоль", cfg.Logger.Mod)
+		log.Printf("unknown logger mode: %s, using console", cfg.Logger.Mod)
 		globalLogger = logger.New(cfg.Logger.Level, os.Stdout)
 	}
 
@@ -71,33 +71,33 @@ func setupStorage(ctx context.Context, cfg Config, childLoggers *ChildLoggers) (
 
 	switch cfg.Storage.Mod {
 	case "memory":
-		log.Print("используется in-memory хранилище")
+		log.Print("using in-memory storage")
 		return memorystorage.New(logStorageMem), nil, nil
 
 	case "sql":
-		log.Print("инициализация подключения к PostgreSQL...")
+		log.Print("initializing connection to PostgreSQL...")
 
 		sqlStorage := sqlstorage.New(logStorageSQL, cfg.Storage.DSN)
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
 		if err := sqlStorage.Connect(ctx); err != nil {
-			log.Printf("ошибка подключения к PostgreSQL: %v", err)
+			log.Printf("failed to connect to PostgreSQL: %v", err)
 			return nil, nil, err
 		}
 
-		log.Print("выполнение миграций...")
+		log.Print("running migrations...")
 		if err := sqlStorage.Migrate(cfg.Storage.Migration); err != nil {
 			log.Print(err)
 			return nil, nil, err
 		}
 
-		log.Print("SQL-хранилище успешно инициализировано и подключено")
+		log.Print("SQL storage initialized and connected successfully")
 		return sqlStorage, sqlStorage, nil
 
 	default:
-		log.Printf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
-		return nil, nil, fmt.Errorf("неизвестный тип хранилища: %v", cfg.Storage.Mod)
+		log.Printf("unknown storage type: %v", cfg.Storage.Mod)
+		return nil, nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Mod)
 	}
 }
 
@@ -109,13 +109,13 @@ func startHTTPServer(
 	calendar *app.App,
 ) {
 	serverHTTP := internalhttp.NewServerHTTP(cfg.HTTP.Host, cfg.HTTP.Port, logHTTP, calendar)
-	log.Print("http сервер создан")
+	log.Print("HTTP server created")
 
 	addr := fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port)
 	errCh := make(chan error, 1)
 
 	go func() {
-		log.Print("HTTP сервер запускается " + addr + "...")
+		log.Print("HTTP server starting " + addr + "...")
 		if err := serverHTTP.Start(); err != nil {
 			errCh <- err
 		}
@@ -127,18 +127,18 @@ func startHTTPServer(
 
 		select {
 		case <-ctx.Done():
-			log.Print("получен сигнал завершения, останавливаем HTTP сервер...")
+			log.Print("shutdown signal received, stopping HTTP server...")
 		case err := <-errCh:
-			log.Printf("HTTP сервер аварийно остановился: %s", err)
+			log.Printf("HTTP server stopped unexpectedly: %s", err)
 		}
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
 		if err := serverHTTP.Stop(shutdownCtx); err != nil {
-			log.Printf("[shutdown] ошибка завершения сервера HTTP: %s", err)
+			log.Printf("[shutdown] HTTP server shutdown error: %s", err)
 		} else {
-			log.Print("[shutdown] HTTP сервер завершился корректно...")
+			log.Print("[shutdown] HTTP server shut down gracefully...")
 		}
 	}()
 }
@@ -154,7 +154,7 @@ func startGRPCServer(
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Printf("gRPC не удалось слушать порт %v: %v", addr, err)
+		log.Printf("gRPC failed to listen on %v: %v", addr, err)
 		os.Exit(1)
 	}
 
@@ -162,12 +162,12 @@ func startGRPCServer(
 	grpcSrv := grpc.NewServer()
 	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
 
-	log.Print("gRPC сервер создан")
+	log.Print("gRPC server created")
 
 	errCh := make(chan error, 1)
 
 	go func() {
-		log.Print("gRPC сервер запускается " + lis.Addr().String() + "...")
+		log.Print("gRPC server starting " + lis.Addr().String() + "...")
 		if err := grpcSrv.Serve(lis); err != nil {
 			errCh <- err
 		}
@@ -179,9 +179,9 @@ func startGRPCServer(
 
 		select {
 		case <-ctx.Done():
-			log.Print("получен сигнал завершения, останавливаем gRPC сервер...")
+			log.Print("shutdown signal received, stopping gRPC server...")
 		case err := <-errCh:
-			log.Printf("gRPC сервер аварийно остановился: %s", err)
+			log.Printf("gRPC server stopped unexpectedly: %s", err)
 			return
 		}
 
@@ -196,9 +196,9 @@ func startGRPCServer(
 
 		select {
 		case <-done:
-			log.Print("[shutdown] gRPC сервер завершился корректно...")
+			log.Print("[shutdown] gRPC server shut down gracefully...")
 		case <-shutdownCtx.Done():
-			log.Print("[shutdown] таймаут graceful shutdown gRPC, вызываем Stop()")
+			log.Print("[shutdown] graceful shutdown timeout for gRPC, calling Stop()")
 			grpcSrv.Stop()
 		}
 	}()

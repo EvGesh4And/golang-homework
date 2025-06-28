@@ -27,24 +27,24 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 	var err error
 
 	for i := 1; i <= maxAttempts; i++ {
-		logger.Info("Попытка подключения к RabbitMQ", slog.String("uri", cfg.URI), slog.Int("attempt", i))
+		logger.Info("attempting to connect to RabbitMQ", slog.String("uri", cfg.URI), slog.Int("attempt", i))
 		conn, err = amqp.Dial(cfg.URI)
 		if err == nil {
 			break
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к RabbitMQ: %v", i, err)
+		log.Printf("Attempt %d: failed to connect to RabbitMQ: %v", i, err)
 
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+			return nil, fmt.Errorf("connection aborted by context: %w", ctx.Err())
 		case <-time.After(retryDelay):
 			// Пауза перед следующей попыткой
 		}
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("не удалось подключиться к RabbitMQ после %d попыток: %w", maxAttempts, err)
+		return nil, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w", maxAttempts, err)
 	}
 
 	ch, err := conn.Channel()
@@ -79,7 +79,7 @@ func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logge
 
 func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 	ctx = logger.WithLogMethod(ctx, "Publish")
-	p.logger.InfoContext(ctx, "публикация сообщения", "body", body)
+	p.logger.InfoContext(ctx, "publishing message", "body", body)
 
 	return p.channel.Publish(
 		p.exchange,   // publish to an exchange

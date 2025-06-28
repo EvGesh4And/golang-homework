@@ -37,14 +37,14 @@ func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq
 	}
 	ctx = logger.WithLogEventID(ctx, event.ID)
 
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 	err = s.app.CreateEvent(ctx, event)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
 		return &emptypb.Empty{}, err
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно создано")
+	s.logger.InfoContext(ctx, "event successfully created")
 	return &emptypb.Empty{}, nil
 }
 
@@ -62,13 +62,13 @@ func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
 	event.ID = uuID
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	s.logger.DebugContext(ctx, "attempting to update event")
 	err = s.app.UpdateEvent(ctx, event.ID, event)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
 		return &emptypb.Empty{}, err
 	}
-	s.logger.InfoContext(ctx, "событие успешно обновлено")
+	s.logger.InfoContext(ctx, "event successfully updated")
 	return &emptypb.Empty{}, nil
 }
 
@@ -80,14 +80,14 @@ func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq
 		return &emptypb.Empty{}, err
 	}
 	ctx = logger.WithLogEventID(ctx, id)
-	s.logger.DebugContext(ctx, "попытка удаления события")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	err = s.app.DeleteEvent(ctx, id)
 	if err != nil {
 		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
 		return &emptypb.Empty{}, err
 	}
-	s.logger.InfoContext(ctx, "событие успешно удалено")
+	s.logger.InfoContext(ctx, "event successfully deleted")
 	return &emptypb.Empty{}, nil
 }
 
@@ -128,6 +128,6 @@ func (s *CalendarServer) getEvents(
 	for _, e := range events {
 		resp.Events = append(resp.Events, convertToEventProto(e))
 	}
-	s.logger.InfoContext(ctx, "события успешно получены")
+	s.logger.InfoContext(ctx, "events successfully retrieved")
 	return resp, nil
 }

@@ -82,7 +82,7 @@ func (s *Storage) Migrate(migrate string) (err error) {
 
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	query := `
         INSERT INTO events (id, title, description, user_id, start_time, end_time, time_before)
@@ -101,13 +101,13 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	if err != nil {
 		return logger.WrapError(ctx, fmt.Errorf("storage:sql.CreateEvent: %w", err))
 	}
-	s.logger.InfoContext(ctx, "успешно создано событие")
+	s.logger.InfoContext(ctx, "event successfully created")
 	return nil
 }
 
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	query := `
         UPDATE events
@@ -128,14 +128,14 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	if err != nil {
 		return logger.WrapError(ctx, fmt.Errorf("storage:sql.UpdateEvent: %w", err))
 	}
-	s.logger.InfoContext(ctx, "успешно обновлено событие")
+	s.logger.InfoContext(ctx, "event successfully updated")
 	return nil
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
 
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	query := `
         DELETE FROM events
@@ -146,7 +146,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteEvent: %w", err))
 	}
-	s.logger.InfoContext(ctx, "успешно удалено событие")
+	s.logger.InfoContext(ctx, "event successfully deleted")
 	return nil
 }
 
@@ -176,7 +176,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get events for interval")
 
 	query := `
         SELECT id, title, description, user_id, start_time, end_time, time_before
@@ -219,7 +219,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
+	s.logger.InfoContext(ctx, "events successfully retrieved", "count", len(events))
 
 	return events, nil
 }
@@ -232,7 +232,7 @@ func (s *Storage) GetNotifications(
 	ctx = logger.WithLogMethod(ctx, "GetNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get events for interval")
 
 	query := `
         SELECT id, title, start_time, user_id
@@ -265,7 +265,7 @@ func (s *Storage) GetNotifications(
 		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+	s.logger.InfoContext(ctx, "notifications retrieved successfully", "count", len(notifications))
 
 	return notifications, nil
 }
@@ -274,7 +274,7 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
 	ctx = logger.WithLogStart(ctx, delTime)
 
-	s.logger.DebugContext(ctx, "попытка удалить старые события")
+	s.logger.DebugContext(ctx, "attempting to delete old events")
 
 	query := `
         DELETE FROM events
@@ -290,9 +290,9 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
 	}
 	if count > 0 {
-		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
+		s.logger.InfoContext(ctx, "old events deleted", "count", count)
 	} else {
-		s.logger.InfoContext(ctx, "нет старых событий для удаления")
+		s.logger.InfoContext(ctx, "no old events to delete")
 	}
 	return nil
 }
