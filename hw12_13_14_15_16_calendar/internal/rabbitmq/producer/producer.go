@@ -11,6 +11,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// RabbitProducer publishes messages to RabbitMQ.
 type RabbitProducer struct {
 	conn       *amqp.Connection
 	channel    *amqp.Channel
@@ -23,6 +24,7 @@ type RabbitProducer struct {
 	cancel     context.CancelFunc
 }
 
+// NewRabbitProducer creates and configures a RabbitMQ producer.
 func NewRabbitProducer(ctx context.Context, cfg RabbitMQConf, logger *slog.Logger) (*RabbitProducer, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	p := &RabbitProducer{
@@ -145,6 +147,7 @@ func (p *RabbitProducer) setupExchange(ctx context.Context, cfg RabbitMQConf) er
 	return nil
 }
 
+// Publish sends a message to RabbitMQ.
 func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 	ctx = logger.WithLogMethod(ctx, "Publish")
 	p.logger.DebugContext(ctx, "RabbitProducer.Publish: publishing message", "body", body)
@@ -188,6 +191,7 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 	return nil
 }
 
+// Shutdown closes producer resources.
 func (p *RabbitProducer) Shutdown() error {
 	var errs []error
 

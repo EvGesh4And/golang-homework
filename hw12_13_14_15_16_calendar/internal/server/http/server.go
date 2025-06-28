@@ -10,6 +10,7 @@ import (
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server"
 )
 
+// Server provides HTTP access to the calendar application.
 type Server struct {
 	logger     *slog.Logger
 	app        server.Application
@@ -17,10 +18,12 @@ type Server struct {
 	handler    http.Handler
 }
 
+// Handler returns http.Handler used by the server.
 func (s *Server) Handler() http.Handler {
 	return s.handler
 }
 
+// NewServerHTTP creates and configures a new HTTP server.
 func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Application) *Server {
 	s := &Server{
 		logger: logger,
@@ -43,6 +46,7 @@ func NewServerHTTP(host string, port int, logger *slog.Logger, app server.Applic
 	return s
 }
 
+// Start runs the HTTP server.
 func (s *Server) Start() error {
 	err := s.httpServer.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
@@ -51,6 +55,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
+// Stop gracefully shuts down the HTTP server.
 func (s *Server) Stop(ctx context.Context) error {
 	if s.httpServer == nil {
 		return nil

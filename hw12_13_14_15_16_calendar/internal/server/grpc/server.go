@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// CalendarServer implements the gRPC calendar API.
 type CalendarServer struct {
 	logger *slog.Logger
 	pb.UnimplementedCalendarServer
@@ -20,6 +21,7 @@ type CalendarServer struct {
 	lis net.Listener
 }
 
+// NewServerGRPC creates a new gRPC calendar server.
 func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application) *CalendarServer {
 	return &CalendarServer{
 		logger: logger,
@@ -28,6 +30,7 @@ func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application
 	}
 }
 
+// CreateEvent handles creation of a new event via gRPC.
 func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq) (*emptypb.Empty, error) {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
@@ -48,6 +51,7 @@ func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq
 	return &emptypb.Empty{}, nil
 }
 
+// UpdateEvent handles event updates via gRPC.
 func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq) (*emptypb.Empty, error) {
 	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
@@ -72,6 +76,7 @@ func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq
 	return &emptypb.Empty{}, nil
 }
 
+// DeleteEvent handles deletion of an event via gRPC.
 func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq) (*emptypb.Empty, error) {
 	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
 	id, err := getEventIDFromBody(ctx, s.logger, req)
@@ -91,14 +96,17 @@ func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq
 	return &emptypb.Empty{}, nil
 }
 
+// GetEventsDay returns events for a day via gRPC.
 func (s *CalendarServer) GetEventsDay(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsDay", req, s.app.GetEventsDay)
 }
 
+// GetEventsWeek returns events for a week via gRPC.
 func (s *CalendarServer) GetEventsWeek(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsWeek", req, s.app.GetEventsWeek)
 }
 
+// GetEventsMonth returns events for a month via gRPC.
 func (s *CalendarServer) GetEventsMonth(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsMonth", req, s.app.GetEventsMonth)
 }

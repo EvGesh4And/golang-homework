@@ -1,5 +1,6 @@
 package consumer
 
+// RabbitMQConf defines RabbitMQ consumer configuration.
 type RabbitMQConf struct {
 	URI          string `toml:"uri" env:"URI"`
 	Exchange     string `toml:"exchange" env:"EXCHANGE"`

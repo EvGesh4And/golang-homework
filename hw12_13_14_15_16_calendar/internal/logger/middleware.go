@@ -9,20 +9,24 @@ import (
 	"github.com/google/uuid"
 )
 
+// HandlerMiddleware adds context fields to every log record.
 type HandlerMiddleware struct {
 	next slog.Handler
 }
 
+// NewHandlerMiddleware wraps the given handler with additional context.
 func NewHandlerMiddleware(next slog.Handler) *HandlerMiddleware {
 	return &HandlerMiddleware{
 		next: next,
 	}
 }
 
+// Enabled forwards the Enabled check to the next handler.
 func (h *HandlerMiddleware) Enabled(ctx context.Context, rec slog.Level) bool {
 	return h.next.Enabled(ctx, rec)
 }
 
+// Handle enriches the record with context information before logging.
 func (h *HandlerMiddleware) Handle(ctx context.Context, rec slog.Record) error {
 	if c, ok := ctx.Value(key).(logCtx); ok {
 		if c.EventID != uuid.Nil {
@@ -38,12 +42,14 @@ func (h *HandlerMiddleware) Handle(ctx context.Context, rec slog.Record) error {
 	return h.next.Handle(ctx, rec)
 }
 
+// WithAttrs returns a new handler with additional attributes.
 func (h *HandlerMiddleware) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return &HandlerMiddleware{
 		next: h.next.WithAttrs(attrs),
 	}
 }
 
+// WithGroup returns a new handler with the given group name.
 func (h *HandlerMiddleware) WithGroup(name string) slog.Handler {
 	return &HandlerMiddleware{
 		next: h.next.WithGroup(name),
@@ -60,6 +66,7 @@ type keyType int
 
 const key = keyType(0)
 
+// WithLogEventID attaches an event ID to the logging context.
 func WithLogEventID(ctx context.Context, eventID uuid.UUID) context.Context {
 	if c, ok := ctx.Value(key).(logCtx); ok {
 		c.EventID = eventID
@@ -70,6 +77,7 @@ func WithLogEventID(ctx context.Context, eventID uuid.UUID) context.Context {
 	})
 }
 
+// WithLogMethod attaches a method name to the logging context.
 func WithLogMethod(ctx context.Context, method string) context.Context {
 	if c, ok := ctx.Value(key).(logCtx); ok {
 		c.Method = method
@@ -80,6 +88,7 @@ func WithLogMethod(ctx context.Context, method string) context.Context {
 	})
 }
 
+// WithLogStart adds a start time to the logging context.
 func WithLogStart(ctx context.Context, start time.Time) context.Context {
 	if c, ok := ctx.Value(key).(logCtx); ok {
 		c.Start = start
@@ -103,6 +112,7 @@ func (e *errorWithCtx) Error() string {
 	return e.next.Error()
 }
 
+// WrapError stores context fields in the returned error.
 func WrapError(ctx context.Context, err error) error {
 	c := logCtx{}
 	if x, ok := ctx.Value(key).(logCtx); ok {
@@ -114,6 +124,7 @@ func WrapError(ctx context.Context, err error) error {
 	}
 }
 
+// ErrorCtx extracts logging context from a wrapped error.
 func ErrorCtx(ctx context.Context, err error) context.Context {
 	var errWithCtx *errorWithCtx
 	if errors.As(err, &errWithCtx) {

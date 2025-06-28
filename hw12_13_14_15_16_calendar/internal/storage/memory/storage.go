@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Storage keeps events in memory.
 type Storage struct {
 	mu        sync.RWMutex
 	eventMap  map[uuid.UUID]storage.Event
@@ -19,6 +20,7 @@ type Storage struct {
 	logger    *slog.Logger
 }
 
+// New creates an in-memory storage instance.
 func New(logger *slog.Logger) *Storage {
 	return &Storage{
 		mu:        sync.RWMutex{},
@@ -28,6 +30,7 @@ func New(logger *slog.Logger) *Storage {
 	}
 }
 
+// CreateEvent adds a new event to storage.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = logger.WithLogMethod(ctx, "CreateEvent")
 	s.logger.DebugContext(ctx, "попытка создать событие")
@@ -51,6 +54,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 	return nil
 }
 
+// UpdateEvent replaces an existing event.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
 	s.logger.DebugContext(ctx, "попытка обновить событие")
 
@@ -75,6 +79,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 	return nil
 }
 
+// DeleteEvent removes an event from storage.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	s.logger.DebugContext(ctx, "попытка удалить событие")
 
@@ -97,14 +102,17 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+// GetEventsDay returns events for a day.
 func (s *Storage) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Day")
 }
 
+// GetEventsWeek returns events for a week.
 func (s *Storage) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Week")
 }
 
+// GetEventsMonth returns events for a month.
 func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Month")
 }
@@ -148,6 +156,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	return res, nil
 }
 
+// Close implements the Storage interface. Nothing to close for memory storage.
 func (s *Storage) Close() error {
 	return nil // ничего закрывать не нужно
 }

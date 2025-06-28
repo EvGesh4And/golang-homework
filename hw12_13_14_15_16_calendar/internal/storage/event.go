@@ -7,8 +7,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// DurationSeconds encodes a time.Duration in seconds when marshalled to JSON.
 type DurationSeconds time.Duration
 
+// Event describes a calendar event.
 type Event struct {
 	ID          uuid.UUID
 	Title       string
@@ -19,6 +21,7 @@ type Event struct {
 	TimeBefore  time.Duration
 }
 
+// EventDTO is a transport representation of Event.
 type EventDTO struct {
 	ID          uuid.UUID       `json:"id"`
 	Title       string          `json:"title"`
@@ -29,6 +32,7 @@ type EventDTO struct {
 	TimeBefore  DurationSeconds `json:"timeBefore"`
 }
 
+// ToDTO converts Event to EventDTO.
 func ToDTO(e Event) EventDTO {
 	return EventDTO{
 		ID:          e.ID,
@@ -41,6 +45,7 @@ func ToDTO(e Event) EventDTO {
 	}
 }
 
+// FromDTO converts EventDTO to Event.
 func FromDTO(dto EventDTO) Event {
 	return Event{
 		ID:          dto.ID,
@@ -53,12 +58,14 @@ func FromDTO(dto EventDTO) Event {
 	}
 }
 
+// Interval marks occupied time span of an event.
 type Interval struct {
 	ID    uuid.UUID
 	Start time.Time
 	End   time.Time
 }
 
+// CheckValid validates Event fields.
 func (e Event) CheckValid() error {
 	if e.ID == uuid.Nil {
 		return &ErrInvalidEvent{
@@ -93,15 +100,18 @@ func (e Event) CheckValid() error {
 	return nil
 }
 
+// GetInterval returns time interval covered by the event.
 func (e Event) GetInterval() Interval {
 	return Interval{e.ID, e.Start, e.End}
 }
 
+// MarshalJSON implements json.Marshaler.
 func (d DurationSeconds) MarshalJSON() ([]byte, error) {
 	seconds := int64(time.Duration(d).Seconds())
 	return json.Marshal(seconds)
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
 func (d *DurationSeconds) UnmarshalJSON(data []byte) error {
 	var seconds int64
 	if err := json.Unmarshal(data, &seconds); err != nil {

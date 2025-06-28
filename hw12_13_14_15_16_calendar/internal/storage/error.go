@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Ошибка в полях события.
+// ErrInvalidEvent describes invalid fields of an event.
 type ErrInvalidEvent struct {
 	Field   string
 	Message string

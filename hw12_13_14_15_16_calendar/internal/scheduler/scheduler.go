@@ -10,16 +10,19 @@ import (
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 )
 
+// Storage provides access to event data needed by the scheduler.
 type Storage interface {
 	GetNotifications(ctx context.Context, start time.Time, tick time.Duration) ([]storage.Notification, error)
 	DeleteOldEvents(ctx context.Context, before time.Time) error
 }
 
+// Publisher sends notifications about upcoming events.
 type Publisher interface {
 	Publish(ctx context.Context, body string) error
 	Shutdown() error
 }
 
+// Scheduler periodically publishes event notifications.
 type Scheduler struct {
 	storage   Storage
 	publisher Publisher
@@ -28,6 +31,7 @@ type Scheduler struct {
 	logger    *slog.Logger
 }
 
+// NewScheduler creates a new Scheduler instance.
 func NewScheduler(logger *slog.Logger, storage Storage, publisher Publisher, cfg NotificationsConf) *Scheduler {
 	return &Scheduler{
 		storage:   storage,
@@ -38,6 +42,7 @@ func NewScheduler(logger *slog.Logger, storage Storage, publisher Publisher, cfg
 	}
 }
 
+// Start runs the scheduler loop until the context is cancelled.
 func (s *Scheduler) Start(ctx context.Context) {
 	ctx = logger.WithLogMethod(ctx, "Start")
 
@@ -62,6 +67,7 @@ func (s *Scheduler) Start(ctx context.Context) {
 	}
 }
 
+// PublishNotifications sends notifications and removes old events.
 func (s *Scheduler) PublishNotifications(ctx context.Context) {
 	ctx = logger.WithLogMethod(ctx, "PublishNotifications")
 

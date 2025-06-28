@@ -24,6 +24,7 @@ func (s *Server) routes() http.Handler {
 	return mux
 }
 
+// CreateEvent handles event creation request.
 func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := logger.WithLogMethod(r.Context(), "CreateEvent")
 
@@ -48,6 +49,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// UpdateEvent handles event update request.
 func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := logger.WithLogMethod(r.Context(), "UpdateEvent")
 
@@ -81,6 +83,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// DeleteEvent handles event deletion request.
 func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := logger.WithLogMethod(r.Context(), "DeleteEvent")
 
@@ -105,14 +108,17 @@ func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetEventsDay returns events for a single day.
 func (s *Server) GetEventsDay(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Day", s.app.GetEventsDay)
 }
 
+// GetEventsWeek returns events for a week.
 func (s *Server) GetEventsWeek(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Week", s.app.GetEventsWeek)
 }
 
+// GetEventsMonth returns events for a month.
 func (s *Server) GetEventsMonth(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Month", s.app.GetEventsMonth)
 }
