@@ -19,8 +19,8 @@ type RabbitConsumer struct {
 	tag       string
 	queue     amqp.Queue
 	logger    *slog.Logger
-	ctx       context.Context
 	cancel    context.CancelFunc
+	done      chan error
 	reconnect chan struct{}
 }
 
@@ -29,8 +29,8 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 	c := &RabbitConsumer{
 		tag:       cfg.ConsumerTag,
 		logger:    lg,
-		ctx:       ctx,
 		cancel:    cancel,
+		done:      make(chan error),
 		reconnect: make(chan struct{}, 1),
 	}
 
@@ -47,7 +47,7 @@ func NewRabbitConsumer(ctx context.Context, cfg RabbitMQConf, lg *slog.Logger) (
 	}
 
 	c.reconnect <- struct{}{}
-	go c.startReconnectLoop(c.ctx, cfg)
+	go c.startReconnectLoop(ctx, cfg)
 
 	return c, nil
 }
@@ -151,6 +151,8 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 }
 
 func (c *RabbitConsumer) Handle(ctx context.Context) error {
+	defer close(c.done)
+
 	ctx = logger.WithLogMethod(ctx, "Handle")
 
 outer:
@@ -226,6 +228,8 @@ func (c *RabbitConsumer) Shutdown() error {
 	}
 
 	c.cancel()
+	// Ожидаем завершения Handle
+	<-c.done
 
 	return errors.Join(errs...)
 }
