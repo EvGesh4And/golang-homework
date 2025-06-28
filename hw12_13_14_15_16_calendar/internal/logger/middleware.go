@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -117,6 +118,9 @@ func WrapError(ctx context.Context, err error) error {
 	c := logCtx{}
 	if x, ok := ctx.Value(key).(logCtx); ok {
 		c = x
+	}
+	if c.Method != "" {
+		err = fmt.Errorf("%s: %w", c.Method, err)
 	}
 	return &errorWithCtx{
 		next: err,
