@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,7 +32,7 @@ func main() {
 		log.Printf("error initializing config: %v", err)
 		return
 	}
-	childLoggers, closer, err := setupLogger(cfg)
+	lg, closer, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
 		log.Printf("error initializing logger: %v", err)
 		return
@@ -42,7 +43,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
+	storage, closer, err := setupStorage(ctx, cfg, lg)
 	if err != nil {
 		log.Printf("error initializing storage: %v", err)
 		return
@@ -56,12 +57,12 @@ func main() {
 		}
 	}()
 
-	calendar := app.New(childLoggers.app, storage)
+	calendar := app.New(lg, storage)
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	startHTTPServer(ctx, g, cfg, childLoggers.http, calendar)
-	startGRPCServer(ctx, g, cfg, childLoggers.grpc, calendar)
+	startHTTPServer(ctx, g, cfg, lg, calendar)
+	startGRPCServer(ctx, g, cfg, lg, calendar)
 
 	if err := g.Wait(); err != nil {
 		log.Printf("service stopped with error: %v", err)

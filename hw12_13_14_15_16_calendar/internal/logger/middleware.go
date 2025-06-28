@@ -58,23 +58,24 @@ func (h *HandlerMiddleware) WithGroup(name string) slog.Handler {
 }
 
 type logCtx struct {
-	EventID uuid.UUID
-	Method  string
-	Start   time.Time
+	Component string
+	Method    string
+	EventID   uuid.UUID
+	Start     time.Time
 }
 
 type keyType int
 
 const key = keyType(0)
 
-// WithLogEventID attaches an event ID to the logging context.
-func WithLogEventID(ctx context.Context, eventID uuid.UUID) context.Context {
+// WithLogMethod attaches a method name to the logging context.
+func WithLogComponent(ctx context.Context, component string) context.Context {
 	if c, ok := ctx.Value(key).(logCtx); ok {
-		c.EventID = eventID
+		c.Component = component
 		return context.WithValue(ctx, key, c)
 	}
 	return context.WithValue(ctx, key, logCtx{
-		EventID: eventID,
+		Component: component,
 	})
 }
 
@@ -86,6 +87,17 @@ func WithLogMethod(ctx context.Context, method string) context.Context {
 	}
 	return context.WithValue(ctx, key, logCtx{
 		Method: method,
+	})
+}
+
+// WithLogEventID attaches an event ID to the logging context.
+func WithLogEventID(ctx context.Context, eventID uuid.UUID) context.Context {
+	if c, ok := ctx.Value(key).(logCtx); ok {
+		c.EventID = eventID
+		return context.WithValue(ctx, key, c)
+	}
+	return context.WithValue(ctx, key, logCtx{
+		EventID: eventID,
 	})
 }
 
@@ -118,25 +130,20 @@ func WrapError(ctx context.Context, err error) error {
 	var prefix string
 
 	// Extract component from context
-	slog.Info("tut")
-	if compVal := ctx.Value("component"); compVal != nil {
-		slog.Info("tut1")
-		if component, ok := compVal.(string); ok && component != "" {
-			slog.Info("tut2", prefix)
-			prefix = component
-		}
-	}
-
 	c := logCtx{}
 	// Extract method from context and append to prefix if present
 	if x, ok := ctx.Value(key).(logCtx); ok {
 		c = x
-		if c.Method != "" {
-			if prefix != "" {
-				prefix += "." + c.Method
-			} else {
-				prefix = c.Method
-			}
+	}
+
+	if c.Component != "" {
+		prefix = c.Component
+	}
+	if c.Method != "" {
+		if prefix != "" {
+			prefix += "." + c.Method
+		} else {
+			prefix = c.Method
 		}
 	}
 

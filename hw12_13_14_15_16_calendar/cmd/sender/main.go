@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/rabbitmq/consumer"
 )
 
@@ -32,7 +33,7 @@ func main() {
 		log.Printf("error initializing config: %v", err)
 		return
 	}
-	child, closer, err := setupLogger(cfg)
+	lg, closer, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
 		log.Fatalf("logger setup error: %v", err)
 	}
@@ -44,7 +45,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	cons, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, child.sender)
+	cons, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, lg)
 	if err != nil {
 		log.Printf("cannot create consumer: %v", err)
 		return

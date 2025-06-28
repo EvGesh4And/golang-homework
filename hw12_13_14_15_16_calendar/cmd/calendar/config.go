@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/BurntSushi/toml"
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/caarlos0/env/v10"
 )
 
@@ -9,16 +10,10 @@ import (
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger  LoggerConf  `toml:"logger" env-prefix:"LOGGER_"`
-	Storage StorageConf `toml:"storage" env-prefix:"STORAGE_"`
-	HTTP    HTTPConf    `toml:"http" env-prefix:"HTTP_"`
-	GRPC    GRPCConf    `toml:"grpc" env-prefix:"GRPC_"`
-}
-
-type LoggerConf struct {
-	Mod   string `toml:"mod" env:"MOD"`
-	Path  string `toml:"path" env:"PATH"`
-	Level string `toml:"level" env:"LEVEL"`
+	Logger  logger.Config `toml:"logger" env-prefix:"LOGGER_"`
+	Storage StorageConf   `toml:"storage" env-prefix:"STORAGE_"`
+	HTTP    HTTPConf      `toml:"http" env-prefix:"HTTP_"`
+	GRPC    GRPCConf      `toml:"grpc" env-prefix:"GRPC_"`
 }
 
 type StorageConf struct {

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/rabbitmq/producer"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/scheduler"
 )
@@ -31,7 +32,7 @@ func main() {
 		log.Printf("error initializing config: %v", err)
 		return
 	}
-	childLoggers, closer, err := setupLogger(cfg)
+	lg, closer, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
 		log.Fatalf("logger setup error: %v", err)
 	}
@@ -41,7 +42,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
+	storage, closer, err := setupStorage(ctx, cfg, lg)
 	if err != nil {
 		log.Printf("error initializing storage: %v", err)
 		return
@@ -55,12 +56,12 @@ func main() {
 		}
 	}()
 
-	producer, err := producer.NewRabbitProducer(ctx, cfg.RabbitMQ, childLoggers.scheduler)
+	producer, err := producer.NewRabbitProducer(ctx, cfg.RabbitMQ, lg)
 	if err != nil {
 		return
 	}
 
-	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
+	scheduler := scheduler.NewScheduler(lg, storage, producer, cfg.Notifications)
 
 	scheduler.Start(ctx)
 	log.Print("scheduler shutdown complete...")

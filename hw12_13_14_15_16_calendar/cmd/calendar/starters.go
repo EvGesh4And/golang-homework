@@ -13,7 +13,6 @@ import (
 
 	pb "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/api"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/app"
-	logsetup "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger/setup"
 	grpcserver "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/grpc"
 	internalhttp "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/server/http"
 	memorystorage "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage/memory"
@@ -22,48 +21,16 @@ import (
 	"google.golang.org/grpc"
 )
 
-type ChildLoggers struct {
-	app        *slog.Logger
-	storageMem *slog.Logger
-	storageSQL *slog.Logger
-	http       *slog.Logger
-	grpc       *slog.Logger
-}
-
-func setupLogger(cfg Config) (*ChildLoggers, io.Closer, error) {
-	globalLogger, closer, err := logsetup.New(logsetup.Config{
-		Mod:   cfg.Logger.Mod,
-		Path:  cfg.Logger.Path,
-		Level: cfg.Logger.Level,
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	childLoggers := &ChildLoggers{
-		app:        globalLogger.With("component", "app"),
-		storageMem: globalLogger.With("component", "storage", "type", "inmemory"),
-		storageSQL: globalLogger.With("component", "storage", "type", "sql"),
-		http:       globalLogger.With("component", "http"),
-		grpc:       globalLogger.With("component", "grpc"),
-	}
-
-	return childLoggers, closer, nil
-}
-
-func setupStorage(ctx context.Context, cfg Config, childLoggers *ChildLoggers) (app.Storage, io.Closer, error) {
-	logStorageMem := childLoggers.storageMem
-	logStorageSQL := childLoggers.storageSQL
-
+func setupStorage(ctx context.Context, cfg Config, lg *slog.Logger) (app.Storage, io.Closer, error) {
 	switch cfg.Storage.Mod {
 	case "memory":
 		log.Print("using in-memory storage")
-		return memorystorage.New(logStorageMem), nil, nil
+		return memorystorage.New(lg), nil, nil
 
 	case "sql":
 		log.Print("initializing connection to PostgreSQL...")
 
-		sqlStorage := sqlstorage.New(logStorageSQL, cfg.Storage.DSN)
+		sqlStorage := sqlstorage.New(lg, cfg.Storage.DSN)
 		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 
@@ -73,7 +40,7 @@ func setupStorage(ctx context.Context, cfg Config, childLoggers *ChildLoggers) (
 		}
 
 		log.Print("executing migrations...")
-		if err := sqlStorage.Migrate(cfg.Storage.Migration); err != nil {
+		if err := sqlStorage.Migrate(ctx, cfg.Storage.Migration); err != nil {
 			log.Print(err)
 			return nil, nil, err
 		}
@@ -91,10 +58,10 @@ func startHTTPServer(
 	ctx context.Context,
 	g *errgroup.Group,
 	cfg Config,
-	logHTTP *slog.Logger,
+	lg *slog.Logger,
 	calendar *app.App,
 ) {
-	serverHTTP := internalhttp.NewServerHTTP(cfg.HTTP.Host, cfg.HTTP.Port, logHTTP, calendar)
+	serverHTTP := internalhttp.NewServerHTTP(cfg.HTTP.Host, cfg.HTTP.Port, lg, calendar)
 	log.Print("HTTP server created")
 
 	addr := fmt.Sprintf("%s:%d", cfg.HTTP.Host, cfg.HTTP.Port)
@@ -127,7 +94,7 @@ func startGRPCServer(
 	ctx context.Context,
 	g *errgroup.Group,
 	cfg Config,
-	logGRPC *slog.Logger,
+	lg *slog.Logger,
 	calendar *app.App,
 ) {
 	addr := fmt.Sprintf("%s:%d", cfg.GRPC.Host, cfg.GRPC.Port)
@@ -140,7 +107,7 @@ func startGRPCServer(
 		return
 	}
 
-	serverGRPC := grpcserver.NewServerGRPC(logGRPC, lis, calendar)
+	serverGRPC := grpcserver.NewServerGRPC(lg, lis, calendar)
 	grpcSrv := grpc.NewServer()
 	pb.RegisterCalendarServer(grpcSrv, serverGRPC)
 

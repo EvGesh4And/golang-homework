@@ -31,8 +31,14 @@ func New(logger *slog.Logger, dsn string) *Storage {
 	}
 }
 
+func (s *Storage) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "storage.sql")
+	return logger.WithLogMethod(ctx, method)
+}
+
 // Connect establishes database connection with retries.
 func (s *Storage) Connect(ctx context.Context) error {
+	ctx = s.setLogCompMeth(ctx, "Connect")
 	const maxAttempts = 5
 	const retryDelay = 2 * time.Second
 
@@ -53,13 +59,13 @@ func (s *Storage) Connect(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("connection aborted by context: %w", ctx.Err())
+			return logger.WrapError(ctx, fmt.Errorf("connection aborted by context: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Пауза перед следующей попыткой
 		}
 	}
 
-	return fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err)
+	return logger.WrapError(ctx, fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err))
 }
 
 // Close closes database connection.
@@ -71,15 +77,15 @@ func (s *Storage) Close() error {
 var embedMigrations embed.FS
 
 // Migrate runs database migrations.
-func (s *Storage) Migrate(migrate string) (err error) {
+func (s *Storage) Migrate(ctx context.Context, migrate string) (err error) {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("setting dialect: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("setting dialect: %w", err))
 	}
 
 	if err := goose.Up(s.db, migrate); err != nil {
-		return fmt.Errorf("migration error: %w", err)
+		return logger.WrapError(ctx, fmt.Errorf("migration error: %w", err))
 	}
 
 	return nil
@@ -87,7 +93,7 @@ func (s *Storage) Migrate(migrate string) (err error) {
 
 // CreateEvent inserts a new event into database.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	ctx = s.setLogCompMeth(ctx, "CreateEvent")
 	s.logger.DebugContext(ctx, "attempting to create event")
 
 	query := `
@@ -113,7 +119,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 
 // UpdateEvent updates an existing event in database.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
+	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
 	s.logger.DebugContext(ctx, "attempting to update event")
 
 	query := `
@@ -141,7 +147,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 
 // DeleteEvent removes an event from database.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
+	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 
 	s.logger.DebugContext(ctx, "attempting to delete event")
 
@@ -184,7 +190,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		d = time.Hour * 24 * 30
 	}
 
-	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
+	ctx = s.setLogCompMeth(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
 	s.logger.DebugContext(ctx, "attempting to get events for interval")
@@ -241,7 +247,7 @@ func (s *Storage) GetNotifications(
 	currTime time.Time,
 	tick time.Duration,
 ) ([]storage.Notification, error) {
-	ctx = logger.WithLogMethod(ctx, "GetNotifications")
+	ctx = s.setLogCompMeth(ctx, "GetNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
 	s.logger.DebugContext(ctx, "attempting to get notifications for interval")
@@ -284,7 +290,7 @@ func (s *Storage) GetNotifications(
 
 // DeleteOldEvents removes events that ended before delTime.
 func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error {
-	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
+	ctx = s.setLogCompMeth(ctx, "DeleteOldEvents")
 	ctx = logger.WithLogStart(ctx, delTime)
 
 	s.logger.DebugContext(ctx, "attempting to delete old events")

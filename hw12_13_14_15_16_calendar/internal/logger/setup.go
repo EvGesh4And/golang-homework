@@ -1,25 +1,23 @@
-package setup
+package logger
 
 import (
 	"io"
 	"log"
 	"log/slog"
 	"os"
-
-	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 )
 
 // Config describes logger initialization parameters.
 type Config struct {
-	Mod   string
-	Path  string
-	Level string
+	Mod   string `toml:"mod" env:"MOD"`
+	Path  string `toml:"path" env:"PATH"`
+	Level string `toml:"level" env:"LEVEL"`
 }
 
 // New initializes global slog.Logger according to configuration.
 // It returns created logger and optional io.Closer that should be closed
 // when logger output is a file.
-func New(cfg Config) (*slog.Logger, io.Closer, error) {
+func NewLogger(cfg Config) (*slog.Logger, io.Closer, error) {
 	var out io.WriteCloser
 	switch cfg.Mod {
 	case "console", "":
@@ -40,7 +38,7 @@ func New(cfg Config) (*slog.Logger, io.Closer, error) {
 		out = os.Stdout
 	}
 
-	l := logger.New(cfg.Level, out)
+	l := New(cfg.Level, out)
 	var closer io.Closer
 	if c, ok := out.(io.Closer); ok && c != os.Stdout {
 		closer = c
