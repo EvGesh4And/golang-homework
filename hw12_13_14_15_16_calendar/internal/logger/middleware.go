@@ -115,13 +115,33 @@ func (e *errorWithCtx) Error() string {
 
 // WrapError stores context fields in the returned error.
 func WrapError(ctx context.Context, err error) error {
+	var prefix string
+
+	// Extract component from context
+	if compVal := ctx.Value("component"); compVal != nil {
+		if component, ok := compVal.(string); ok && component != "" {
+			prefix = component
+		}
+	}
+
 	c := logCtx{}
+	// Extract method from context and append to prefix if present
 	if x, ok := ctx.Value(key).(logCtx); ok {
 		c = x
+		if c.Method != "" {
+			if prefix != "" {
+				prefix += "." + c.Method
+			} else {
+				prefix = c.Method
+			}
+		}
 	}
-	if c.Method != "" {
-		err = fmt.Errorf("%s: %w", c.Method, err)
+
+	// Wrap the error with prefix if available
+	if prefix != "" {
+		err = fmt.Errorf("%s: %w", prefix, err)
 	}
+
 	return &errorWithCtx{
 		next: err,
 		ctx:  c,
