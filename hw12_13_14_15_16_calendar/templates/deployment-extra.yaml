@@ -19,9 +19,12 @@ spec:
       containers:
         - name: db
           image: postgres:latest
-          environment:
-            POSTGRES_USER:     otus_user
-            POSTGRES_PASSWORD: otus_password
-            POSTGRES_DB:       otus
+          env:
+            - name: POSTGRES_USER
+              value: otus_user
+            - name: POSTGRES_PASSWORD
+              value: otus_password
+            - name: POSTGRES_DB
+              value: otus
         - name: rb
           image: rabbitmq:latest
