@@ -34,7 +34,7 @@ func (a *ackMock) Reject(tag uint64, requeue bool) error {
 
 func TestAckDeliveryError(t *testing.T) {
 	var buf bytes.Buffer
-	lg := logger.New("debug", &buf)
+	lg := logger.New("debug", &buf, false)
 	c := &RabbitConsumer{logger: lg}
 
 	d := amqp.Delivery{

@@ -27,14 +27,14 @@ func captureOutput(f func(w io.Writer)) string {
 
 func TestLogger_Info(t *testing.T) {
 	output := captureOutput(func(w io.Writer) {
-		log := New("debug", w)
+		log := New("debug", w, false)
 		log.Debug("event validation check", "event_id", 10)
 	})
 
 	require.Contains(t, output, "event validation check", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("info", w)
+		log := New("info", w, false)
 		log.Info("event added", "event_id", 10)
 		log.Warn("connection lost, trying to restore it")
 	})
@@ -44,7 +44,7 @@ func TestLogger_Info(t *testing.T) {
 	require.Contains(t, output, "connection lost, trying to restore it", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("warn", w)
+		log := New("warn", w, false)
 		log.Info("event added", "event_id", 10)
 		log.Warn("connection lost, trying to restore it")
 	})
@@ -52,7 +52,7 @@ func TestLogger_Info(t *testing.T) {
 	require.Contains(t, output, "connection lost, trying to restore it", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("error", w)
+		log := New("error", w, false)
 		log.Info("event added", "event_id", 10)
 		log.Error("database connection completely lost")
 		log.Warn("connection lost, trying to restore it")

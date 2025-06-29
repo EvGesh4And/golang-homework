@@ -1,6 +1,7 @@
 [logger]
 mod = "console"
 path = "/var/log/sender.log"
+json = true
 level = "debug"
 
 [rabbitmq]

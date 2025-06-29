@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Mod   string `toml:"mod" env:"MOD"`
 	Path  string `toml:"path" env:"PATH"`
+	JSON  bool   `toml:"json" env:"JSON"`
 	Level string `toml:"level" env:"LEVEL"`
 }
 
@@ -38,7 +39,7 @@ func NewLogger(cfg Config) (*slog.Logger, io.Closer, error) {
 		out = os.Stdout
 	}
 
-	l := New(cfg.Level, out)
+	l := New(cfg.Level, out, cfg.JSON)
 	var closer io.Closer
 	if c, ok := out.(io.Closer); ok && c != os.Stdout {
 		closer = c

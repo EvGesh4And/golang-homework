@@ -60,7 +60,7 @@ func TestCreateEvent(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	event := storage.Event{
@@ -93,7 +93,7 @@ func TestUpdateEvent(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	event := storage.Event{
@@ -124,7 +124,7 @@ func TestDeleteEvent(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 	req := httptest.NewRequest(http.MethodDelete, "/event?id="+eventID.String(), nil)
 	w := httptest.NewRecorder()
@@ -143,7 +143,7 @@ func TestGetEventsDay(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
@@ -162,7 +162,7 @@ func TestGetEventsWeek(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 	req := httptest.NewRequest(http.MethodGet, "/event/week?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
@@ -181,7 +181,7 @@ func TestGetEventsMonth(t *testing.T) {
 		},
 	}
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 	req := httptest.NewRequest(http.MethodGet, "/event/month?start=2025-01-01T00:00:00Z", nil)
 	w := httptest.NewRecorder()
@@ -193,7 +193,7 @@ func TestGetEventsMonth(t *testing.T) {
 
 func TestCreateEvent_BadJSON(t *testing.T) {
 	app := &mockApp{}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	req := httptest.NewRequest(http.MethodPost, "/event", bytes.NewBufferString("{"))
@@ -212,7 +212,7 @@ func TestCreateEvent_StorageError(t *testing.T) {
 		_ = event
 		return storage.ErrIDRepeated
 	}}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	event := storage.Event{
@@ -236,7 +236,7 @@ func TestCreateEvent_StorageError(t *testing.T) {
 
 func TestUpdateEvent_InvalidID(t *testing.T) {
 	app := &mockApp{}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	event := storage.Event{
@@ -261,7 +261,7 @@ func TestDeleteEvent_NotFound(t *testing.T) {
 		_ = id
 		return storage.ErrIDNotExist
 	}}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	req := httptest.NewRequest(http.MethodDelete, "/event?id="+eventID.String(), nil)
@@ -275,7 +275,7 @@ func TestDeleteEvent_NotFound(t *testing.T) {
 
 func TestGetEventsDay_InvalidStart(t *testing.T) {
 	app := &mockApp{}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	req := httptest.NewRequest(http.MethodGet, "/event/day?start=bad", nil)
@@ -293,7 +293,7 @@ func TestGetEventsDay_AppError(t *testing.T) {
 		_ = start
 		return nil, errors.New("boom")
 	}}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)
@@ -312,7 +312,7 @@ func TestGetEventsDay_Response(t *testing.T) {
 		_ = start
 		return []storage.Event{ev}, nil
 	}}
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	server := NewServerHTTP("localhost", 8080, logger, app)
 
 	req := httptest.NewRequest(http.MethodGet, "/event/day?start=2025-01-01T00:00:00Z", nil)

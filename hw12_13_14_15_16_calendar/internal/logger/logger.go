@@ -5,6 +5,7 @@ package logger
 import (
 	"io"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -18,7 +19,8 @@ var levelMap = map[string]slog.Level{
 }
 
 // New creates a logger with the provided level and writer.
-func New(level string, out io.Writer) *slog.Logger {
+// New creates a logger with the provided level, writer and format (JSON or human-readable).
+func New(level string, out io.Writer, asJSON bool) *slog.Logger {
 	var levLog slog.Level
 	if lvl, ok := levelMap[level]; ok {
 		levLog = lvl
@@ -26,24 +28,34 @@ func New(level string, out io.Writer) *slog.Logger {
 		levLog = slog.LevelDebug
 	}
 
-	// color := isStdout(out)
+	var handler slog.Handler
 
-	handler := tint.NewHandler(out, &tint.Options{
-		Level:      levLog,
-		TimeFormat: time.Kitchen,
-		// NoColor:    !color,
-		NoColor: true,
-	})
+	if asJSON {
+		// JSON-логирование для парсинга в Elastic, Loki и т.п.
+		handler = slog.NewJSONHandler(out, &slog.HandlerOptions{
+			Level: levLog,
+		})
+	} else {
+		// Человекочитаемый вывод с цветами (если терминал)
+		useColor := isStdout(out)
 
+		handler = tint.NewHandler(out, &tint.Options{
+			Level:      levLog,
+			TimeFormat: time.Kitchen,
+			NoColor:    !useColor,
+		})
+	}
+
+	// Пример middleware для добавления полей или обработки
 	handler = NewHandlerMiddleware(handler)
 
 	return slog.New(handler)
 }
 
-// func isStdout(out io.Writer) bool {
-// 	f, ok := out.(*os.File)
-// 	if !ok {
-// 		return false
-// 	}
-// 	return f.Fd() == os.Stdout.Fd()
-// }
+func isStdout(out io.Writer) bool {
+	f, ok := out.(*os.File)
+	if !ok {
+		return false
+	}
+	return f.Fd() == os.Stdout.Fd()
+}
