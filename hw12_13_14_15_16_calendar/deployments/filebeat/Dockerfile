@@ -1,7 +1,7 @@
 FROM elastic/filebeat:7.17.7
 
 # Копируем файл конфигурации в нужное место
-COPY filebeat.yml /usr/share/filebeat/filebeat.yml
+COPY deployments/filebeat/filebeat.yml /usr/share/filebeat/filebeat.yml
 
 # Устанавливаем права и владельца
 USER root
