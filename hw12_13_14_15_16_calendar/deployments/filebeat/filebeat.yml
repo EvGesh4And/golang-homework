@@ -1,0 +1,22 @@
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+filebeat.inputs:
+  - type: container
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata: ~
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "docker-logs-%{+yyyy.MM.dd}"
+
+setup.kibana:
+  host: "http://kibana:5601"
+
+setup.ilm.enabled: false
+
+logging.level: info
