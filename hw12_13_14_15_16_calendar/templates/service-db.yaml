@@ -6,4 +6,6 @@ spec:
   selector:
     app: db
   ports:
-    - port: 5432
+    - name: postgres
+      port: 5432         # Порт, по которому другие сервисы будут подключаться
+      targetPort: 5432   # Порт внутри контейнера
