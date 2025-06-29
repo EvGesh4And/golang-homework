@@ -35,16 +35,16 @@ func getEventFromBody[T interface{ GetEvent() *pb.Event }](
 	log.DebugContext(ctx, "attempting to extract event from request body")
 	eventPB := req.GetEvent()
 	if eventPB == nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrMissingEvent)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrMissingEvent)
 	}
 	id, err := uuid.Parse(eventPB.Id)
 	if err != nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrInvalidEventID)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrInvalidEventID)
 	}
 
 	userID, err := uuid.Parse(eventPB.UserId)
 	if err != nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrInvalidUserID)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrInvalidUserID)
 	}
 
 	return storage.Event{
@@ -68,11 +68,11 @@ func getEventIDFromBody[T interface{ GetId() string }](
 	log.DebugContext(ctx, "attempting to extract event ID from request parameters")
 	id := req.GetId()
 	if id == "" {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrMissingEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrMissingEventID)
 	}
 	uuID, err := uuid.Parse(id)
 	if err != nil {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrInvalidEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrInvalidEventID)
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
 	log.DebugContext(ctx, "event ID successfully extracted from request parameters")
@@ -89,7 +89,7 @@ func getStartTime[T interface{ GetStart() *timestamppb.Timestamp }](
 	log.DebugContext(ctx, "attempting to extract start time from request parameters")
 	startTimestamp := req.GetStart()
 	if startTimestamp == nil {
-		return time.Time{}, logger.WrapError(ctx, server.ErrInvalidStartPeriod)
+		return time.Time{}, logger.AddPrefix(ctx, server.ErrInvalidStartPeriod)
 	}
 	start := startTimestamp.AsTime()
 	ctx = logger.WithLogStart(ctx, start)

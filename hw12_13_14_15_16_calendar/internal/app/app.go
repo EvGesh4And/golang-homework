@@ -44,11 +44,11 @@ func (a *App) CreateEvent(ctx context.Context, event storage.Event) error {
 	ctx = a.setLogCompMeth(ctx, "CreateEvent")
 	a.logger.DebugContext(ctx, "attempting to create event")
 	if err := event.CheckValid(); err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	err := a.storage.CreateEvent(ctx, event)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event created successfully")
 	return nil
@@ -59,11 +59,11 @@ func (a *App) UpdateEvent(ctx context.Context, id uuid.UUID, event storage.Event
 	ctx = a.setLogCompMeth(ctx, "UpdateEvent")
 	a.logger.DebugContext(ctx, "attempting to update event")
 	if err := event.CheckValid(); err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	err := a.storage.UpdateEvent(ctx, id, event)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event updated successfully")
 	return nil
@@ -74,11 +74,11 @@ func (a *App) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 	ctx = a.setLogCompMeth(ctx, "DeleteEvent")
 	a.logger.DebugContext(ctx, "attempting to delete event")
 	if err := ctx.Err(); err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	err := a.storage.DeleteEvent(ctx, id)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
@@ -91,7 +91,7 @@ func (a *App) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Even
 	a.logger.DebugContext(ctx, "attempting to get events for day")
 	events, err := a.storage.GetEventsDay(ctx, start)
 	if err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil
@@ -104,7 +104,7 @@ func (a *App) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Eve
 	a.logger.DebugContext(ctx, "attempting to get events for week")
 	events, err := a.storage.GetEventsWeek(ctx, start)
 	if err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil
@@ -117,7 +117,7 @@ func (a *App) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Ev
 	a.logger.DebugContext(ctx, "attempting to get events for month")
 	events, err := a.storage.GetEventsMonth(ctx, start)
 	if err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	a.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 	return events, nil

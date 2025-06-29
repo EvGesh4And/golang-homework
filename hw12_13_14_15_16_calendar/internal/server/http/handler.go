@@ -30,7 +30,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err := s.getEventFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
@@ -41,7 +41,7 @@ func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.app.CreateEvent(ctx, event); err != nil {
 		s.checkError(w, err, server.ErrCreateEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
@@ -55,7 +55,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -64,7 +64,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err := s.getEventFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
@@ -75,7 +75,7 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.app.UpdateEvent(ctx, uuID, event); err != nil {
 		s.checkError(w, err, server.ErrUpdateEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
@@ -89,7 +89,7 @@ func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
@@ -100,7 +100,7 @@ func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	if err := s.app.DeleteEvent(ctx, uuID); err != nil {
 		s.checkError(w, err, server.ErrDeleteEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
@@ -134,7 +134,7 @@ func (s *Server) handleGetEvents(
 	startStr := r.URL.Query().Get("start")
 	start, err := time.Parse(time.RFC3339, startStr)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidStartPeriod.Error(), http.StatusBadRequest)
 		return
 	}
@@ -143,7 +143,7 @@ func (s *Server) handleGetEvents(
 
 	events, err := getEventsFunc(r.Context(), start)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrEventRetrieval.Error(), http.StatusInternalServerError)
 		return
 	}

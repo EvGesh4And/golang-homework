@@ -40,7 +40,7 @@ func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq
 	ctx = s.setLogCompMeth(ctx, "CreateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, server.ErrInvalidEventData
 	}
 	ctx = logger.WithLogEventID(ctx, event.ID)
@@ -48,7 +48,7 @@ func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq
 	s.logger.DebugContext(ctx, "attempting to create event")
 	err = s.app.CreateEvent(ctx, event)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 
@@ -61,12 +61,12 @@ func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq
 	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, server.ErrInvalidEventData
 	}
 	uuID, err := getEventIDFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
@@ -74,7 +74,7 @@ func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq
 	s.logger.DebugContext(ctx, "attempting to update event")
 	err = s.app.UpdateEvent(ctx, event.ID, event)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	s.logger.InfoContext(ctx, "event successfully updated")
@@ -86,7 +86,7 @@ func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq
 	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 	id, err := getEventIDFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	ctx = logger.WithLogEventID(ctx, id)
@@ -94,7 +94,7 @@ func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq
 
 	err = s.app.DeleteEvent(ctx, id)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	s.logger.InfoContext(ctx, "event successfully deleted")
@@ -126,14 +126,14 @@ func (s *CalendarServer) getEvents(
 
 	start, err := getStartTime(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return nil, err
 	}
 	ctx = logger.WithLogStart(ctx, start)
 
 	events, err := getFunc(ctx, start)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return nil, server.ErrEventRetrieval
 	}
 

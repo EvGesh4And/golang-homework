@@ -59,13 +59,13 @@ func (s *Storage) Connect(ctx context.Context) error {
 
 		select {
 		case <-ctx.Done():
-			return logger.WrapError(ctx, fmt.Errorf("connection aborted by context: %w", ctx.Err()))
+			return logger.AddPrefix(ctx, fmt.Errorf("connection aborted by context: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Пауза перед следующей попыткой
 		}
 	}
 
-	return logger.WrapError(ctx, fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err))
+	return logger.AddPrefix(ctx, fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err))
 }
 
 // Close closes database connection.
@@ -81,11 +81,11 @@ func (s *Storage) Migrate(ctx context.Context, migrate string) (err error) {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("setting dialect: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("setting dialect: %w", err))
 	}
 
 	if err := goose.Up(s.db, migrate); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("migration error: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("migration error: %w", err))
 	}
 
 	return nil
@@ -111,7 +111,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 		int64(event.TimeBefore.Seconds()),
 	)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "event created successfully")
 	return nil
@@ -139,7 +139,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 		id,
 	)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "event updated successfully")
 	return nil
@@ -158,7 +158,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 	_, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	s.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
@@ -203,7 +203,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 
 	rows, err := s.db.QueryContext(ctx, query, start, start.Add(d))
 	if err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	defer rows.Close()
 
@@ -220,12 +220,12 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 			&event.End,
 			&intervalStr,
 		); err != nil {
-			return nil, logger.WrapError(ctx, err)
+			return nil, logger.AddPrefix(ctx, err)
 		}
 
 		dur, err := parsePostgresInterval(intervalStr)
 		if err != nil {
-			return nil, logger.WrapError(ctx, err)
+			return nil, logger.AddPrefix(ctx, err)
 		}
 		event.TimeBefore = dur
 
@@ -233,7 +233,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 
 	s.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
@@ -260,7 +260,7 @@ func (s *Storage) GetNotifications(
 
 	rows, err := s.db.QueryContext(ctx, query, currTime, currTime.Add(tick))
 	if err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	defer rows.Close()
 
@@ -273,14 +273,14 @@ func (s *Storage) GetNotifications(
 			&notification.Start,
 			&notification.UserID,
 		); err != nil {
-			return nil, logger.WrapError(ctx, err)
+			return nil, logger.AddPrefix(ctx, err)
 		}
 
 		notifications = append(notifications, notification)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, err)
+		return nil, logger.AddPrefix(ctx, err)
 	}
 
 	s.logger.InfoContext(ctx, "notifications retrieved successfully", "count", len(notifications))
@@ -302,11 +302,11 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 
 	res, err := s.db.ExecContext(ctx, query, delTime)
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	count, err := res.RowsAffected()
 	if err != nil {
-		return logger.WrapError(ctx, err)
+		return logger.AddPrefix(ctx, err)
 	}
 	if count > 0 {
 		s.logger.InfoContext(ctx, "old events deleted successfully", "count", count)

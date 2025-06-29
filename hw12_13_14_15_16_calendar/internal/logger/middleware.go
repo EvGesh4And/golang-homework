@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -115,21 +114,8 @@ func WithLogStart(ctx context.Context, start time.Time) context.Context {
 	})
 }
 
-type errorWithCtx struct {
-	next error
-	ctx  logCtx
-}
-
-func (e *errorWithCtx) Unwrap() error {
-	return e.next
-}
-
-func (e *errorWithCtx) Error() string {
-	return e.next.Error()
-}
-
-// WrapError stores context fields in the returned error.
-func WrapError(ctx context.Context, err error) error {
+// AddPrefix adds a prefix to the error message based on the context.
+func AddPrefix(ctx context.Context, err error) error {
 	var prefix string
 
 	// Extract component from context
@@ -155,17 +141,27 @@ func WrapError(ctx context.Context, err error) error {
 		err = fmt.Errorf("%s: %w", prefix, err)
 	}
 
-	return &errorWithCtx{
-		next: err,
-		ctx:  c,
-	}
+	return err
 }
 
-// ErrorCtx extracts logging context from a wrapped error.
-func ErrorCtx(ctx context.Context, err error) context.Context {
-	var errWithCtx *errorWithCtx
-	if errors.As(err, &errWithCtx) {
-		return context.WithValue(ctx, key, errWithCtx.ctx)
-	}
-	return ctx
-}
+// type errorWithCtx struct {
+// 	next error
+// 	ctx  logCtx
+// }
+
+// func (e *errorWithCtx) Unwrap() error {
+// 	return e.next
+// }
+
+// func (e *errorWithCtx) Error() string {
+// 	return e.next.Error()
+// }
+
+// // ErrorCtx extracts logging context from a wrapped error.
+// func ErrorCtx(ctx context.Context, err error) context.Context {
+// 	var errWithCtx *errorWithCtx
+// 	if errors.As(err, &errWithCtx) {
+// 		return context.WithValue(ctx, key, errWithCtx.ctx)
+// 	}
+// 	return ctx
+// }

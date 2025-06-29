@@ -15,7 +15,7 @@ import (
 func (s *Server) getEventFromBody(ctx context.Context, r *http.Request) (storage.Event, error) {
 	var event storage.EventDTO
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		return storage.Event{}, logger.WrapError(ctx, err)
+		return storage.Event{}, logger.AddPrefix(ctx, err)
 	}
 	s.logger.DebugContext(ctx, "request body successfully parsed into event")
 	return storage.FromDTO(event), nil
@@ -26,11 +26,11 @@ func (s *Server) getEventIDFromBody(ctx context.Context, r *http.Request) (uuid.
 	s.logger.DebugContext(ctx, "attempting to extract event ID from request parameters")
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrMissingEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrMissingEventID)
 	}
 	uuID, err := uuid.Parse(id)
 	if err != nil {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrInvalidEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrInvalidEventID)
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
 	s.logger.DebugContext(ctx, "event ID successfully extracted from request parameters")

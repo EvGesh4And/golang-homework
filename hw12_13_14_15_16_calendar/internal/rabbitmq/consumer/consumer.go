@@ -80,13 +80,13 @@ func (c *RabbitConsumer) connectWithRetry(ctx context.Context, uri string) error
 		select {
 		case <-ctx.Done():
 			c.logger.InfoContext(ctx, "connection cancelled", "error", ctx.Err())
-			return logger.WrapError(ctx, fmt.Errorf("connection cancelled: %w", ctx.Err()))
+			return logger.AddPrefix(ctx, fmt.Errorf("connection cancelled: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Pause before the next attempt
 		}
 	}
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w",
+		return logger.AddPrefix(ctx, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w",
 			maxAttempts, err))
 	}
 
@@ -106,7 +106,7 @@ func (c *RabbitConsumer) initChannel(ctx context.Context) error {
 	var err error
 	c.channel, err = c.conn.Channel()
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("channel: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("channel: %w", err))
 	}
 	c.logger.InfoContext(ctx, "channel initialized")
 	return nil
@@ -126,7 +126,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 		false,
 		nil,
 	); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("exchange declare: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("exchange declare: %w", err))
 	}
 
 	c.logger.InfoContext(ctx, "exchange declared")
@@ -137,7 +137,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 		cfg.Queue, true, false, false, false, nil,
 	)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("queue declare: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("queue declare: %w", err))
 	}
 	c.queue = q
 
@@ -149,7 +149,7 @@ func (c *RabbitConsumer) declareExchangeQueueBind(ctx context.Context, cfg Rabbi
 	if err := c.channel.QueueBind(
 		q.Name, cfg.BindingKey, cfg.Exchange, false, nil,
 	); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("queue bind: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("queue bind: %w", err))
 	}
 
 	c.logger.InfoContext(ctx, "queue bound")
@@ -168,7 +168,7 @@ outer:
 		select {
 		case <-ctx.Done():
 			c.logger.InfoContext(ctx, "context cancelled")
-			return logger.WrapError(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
+			return logger.AddPrefix(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
 		case <-c.reconnect:
 		}
 
@@ -184,7 +184,7 @@ outer:
 			nil,
 		)
 		if err != nil {
-			return logger.WrapError(ctx, fmt.Errorf("queue consume: %w", err))
+			return logger.AddPrefix(ctx, fmt.Errorf("queue consume: %w", err))
 		}
 
 		c.logger.InfoContext(ctx, "messages are being consumed")
@@ -193,7 +193,7 @@ outer:
 			select {
 			case <-ctx.Done():
 				c.logger.InfoContext(ctx, "context cancelled")
-				return logger.WrapError(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
+				return logger.AddPrefix(ctx, fmt.Errorf("context cancelled: %w", ctx.Err()))
 			case d, ok := <-deliveries:
 				if !ok {
 					c.logger.InfoContext(ctx, "deliveries channel closed")
@@ -212,7 +212,7 @@ outer:
 				c.logger.DebugContext(ctx, "try unmarshalling notification")
 				var notification storage.Notification
 				if err := json.Unmarshal(d.Body, &notification); err != nil {
-					return logger.WrapError(ctx, fmt.Errorf("error during unmarshal: %w", err))
+					return logger.AddPrefix(ctx, fmt.Errorf("error during unmarshal: %w", err))
 				}
 				c.logger.InfoContext(ctx, "notification unmarshalled", "notification", notification)
 
@@ -248,7 +248,7 @@ func (c *RabbitConsumer) Shutdown() error {
 func (c *RabbitConsumer) ackDelivery(ctx context.Context, d amqp.Delivery) error {
 	if err := d.Ack(false); err != nil {
 		c.logger.ErrorContext(ctx, "failed to acknowledge message", slog.String("error", err.Error()))
-		return logger.WrapError(ctx, fmt.Errorf("ack: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("ack: %w", err))
 	}
 	return nil
 }

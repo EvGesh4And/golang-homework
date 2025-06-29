@@ -81,14 +81,14 @@ func (p *RabbitProducer) connectWithRetry(ctx context.Context, uri string) error
 		select {
 		case <-ctx.Done():
 			p.logger.InfoContext(ctx, "connection cancelled", "error", ctx.Err())
-			return logger.WrapError(ctx, fmt.Errorf("connection cancelled: %w", ctx.Err()))
+			return logger.AddPrefix(ctx, fmt.Errorf("connection cancelled: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Pause before the next attempt
 		}
 	}
 
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w",
+		return logger.AddPrefix(ctx, fmt.Errorf("failed to connect to RabbitMQ after %d attempts: %w",
 			maxAttempts, err))
 	}
 
@@ -109,7 +109,7 @@ func (p *RabbitProducer) initChannel(ctx context.Context) error {
 	var err error
 	p.channel, err = p.conn.Channel()
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("channel: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("channel: %w", err))
 	}
 
 	p.logger.InfoContext(ctx, "channel initialized")
@@ -119,7 +119,7 @@ func (p *RabbitProducer) initChannel(ctx context.Context) error {
 		p.logger.InfoContext(ctx, "enabling publishing confirms")
 
 		if err := p.channel.Confirm(false); err != nil {
-			return logger.WrapError(ctx, fmt.Errorf("could not enable confirms: %w", err))
+			return logger.AddPrefix(ctx, fmt.Errorf("could not enable confirms: %w", err))
 		}
 
 		p.confirms = p.channel.NotifyPublish(make(chan amqp.Confirmation, 1))
@@ -144,7 +144,7 @@ func (p *RabbitProducer) setupExchange(ctx context.Context, cfg RabbitMQConf) er
 		nil,              // arguments
 	); err != nil {
 		p.channel.Close()
-		return logger.WrapError(ctx, fmt.Errorf("exchange declare: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("exchange declare: %w", err))
 	}
 
 	p.logger.InfoContext(ctx, "RabbitProducer.setupExchange: exchange declared")
@@ -171,7 +171,7 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 			Priority:        0,
 		},
 	); err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("failed to publish message: %w", err))
+		return logger.AddPrefix(ctx, fmt.Errorf("failed to publish message: %w", err))
 	}
 
 	p.logger.InfoContext(ctx, "RabbitProducer.Publish: message published", "body", body)
@@ -186,10 +186,10 @@ func (p *RabbitProducer) Publish(ctx context.Context, body string) error {
 			} else {
 				p.logger.ErrorContext(ctx, "RabbitProducer.Publish: message delivery NOT confirmed",
 					slog.Uint64("deliveryTag", confirm.DeliveryTag))
-				return logger.WrapError(ctx, fmt.Errorf("message not acknowledged by broker"))
+				return logger.AddPrefix(ctx, fmt.Errorf("message not acknowledged by broker"))
 			}
 		case <-time.After(5 * time.Second):
-			return logger.WrapError(ctx, fmt.Errorf("timeout waiting for confirmation"))
+			return logger.AddPrefix(ctx, fmt.Errorf("timeout waiting for confirmation"))
 		}
 	}
 
