@@ -9,7 +9,7 @@ spec:
     - host: calendar-grpc.local
       http:
         paths:
-          - path: /grpc
+          - path: /
             pathType: Prefix
             backend:
               service:

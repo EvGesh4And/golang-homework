@@ -9,7 +9,7 @@ spec:
     - host: calendar-http.local
       http:
         paths:
-          - path: /http
+          - path: /
             pathType: Prefix
             backend:
               service:
