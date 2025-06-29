@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extra-deployment
+  labels:
+    app: extra
+    version: "1.0"
+    component: "backend"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: extra
+  template:
+    metadata:
+      labels:
+        app: extra
+    spec:
+      containers:
+        - name: db
+          image: postgres:latest
+          environment:
+            POSTGRES_USER:     otus_user
+            POSTGRES_PASSWORD: otus_password
+            POSTGRES_DB:       otus
+        - name: rb
+          image: rabbitmq:latest
