@@ -19,3 +19,4 @@ spec:
       containers:
         - name: sender
           image: sender:develop
+          imagePullPolicy: Never

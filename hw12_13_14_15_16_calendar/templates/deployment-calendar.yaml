@@ -18,6 +18,7 @@ spec:
       containers:
         - name: calendar
           image: calendar:develop
+          imagePullPolicy: Never
           ports:
             - containerPort: 8888
             - containerPort: 50051

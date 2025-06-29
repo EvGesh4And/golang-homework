@@ -18,3 +18,4 @@ spec:
       containers:
         - name: scheduler
           image: scheduler:develop
+          imagePullPolicy: Never
