@@ -25,3 +25,5 @@ spec:
               value: otus_password
             - name: POSTGRES_DB
               value: otus
+          ports:
+            - containerPort: 5432
