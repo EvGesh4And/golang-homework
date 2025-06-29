@@ -13,6 +13,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: calendar-service
+                name: calendar
                 port:
                   name: grpc
