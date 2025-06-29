@@ -5,7 +5,6 @@ package logger
 import (
 	"io"
 	"log/slog"
-	"os"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -27,12 +26,13 @@ func New(level string, out io.Writer) *slog.Logger {
 		levLog = slog.LevelDebug
 	}
 
-	color := isStdout(out)
+	// color := isStdout(out)
 
 	handler := tint.NewHandler(out, &tint.Options{
 		Level:      levLog,
 		TimeFormat: time.Kitchen,
-		NoColor:    !color,
+		// NoColor:    !color,
+		NoColor: true,
 	})
 
 	handler = NewHandlerMiddleware(handler)
@@ -40,10 +40,10 @@ func New(level string, out io.Writer) *slog.Logger {
 	return slog.New(handler)
 }
 
-func isStdout(out io.Writer) bool {
-	f, ok := out.(*os.File)
-	if !ok {
-		return false
-	}
-	return f.Fd() == os.Stdout.Fd()
-}
+// func isStdout(out io.Writer) bool {
+// 	f, ok := out.(*os.File)
+// 	if !ok {
+// 		return false
+// 	}
+// 	return f.Fd() == os.Stdout.Fd()
+// }
