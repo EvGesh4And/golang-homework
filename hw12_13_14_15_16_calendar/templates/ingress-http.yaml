@@ -6,7 +6,7 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
   rules:
-    - host: calendar.local
+    - host: calendar-http.local
       http:
         paths:
           - path: /http
