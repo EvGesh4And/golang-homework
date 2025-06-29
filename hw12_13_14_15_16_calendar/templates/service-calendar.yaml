@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: calendar
 spec:
-  type: NodePort
   selector:
     app: calendar
   ports:

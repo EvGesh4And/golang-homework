@@ -5,6 +5,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
 spec:
+  type: NodePort
   rules:
     - host: calendar-http.local
       http:
