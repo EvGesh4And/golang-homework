@@ -35,6 +35,7 @@ build-img:         ## собрать образы сервисов + БД + Rabb
 	      --build-arg SERVICE_NAME=$$s \
 	      -f build/Dockerfile . ; \
 	done
+	@docker build -t custom-filebeat -f deployments/filebeat/Dockerfile .
 
 up: build-img     ## поднять docker-compose стек
 	docker compose -f deployments/docker-compose.yaml up -d
