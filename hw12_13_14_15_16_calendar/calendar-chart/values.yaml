@@ -7,9 +7,11 @@ calendar:
     - name: grpc
       containerPort: 50051
   hosts:
-    - host: calendar.local
+    - host: calendar-http.local
+      protocol: "HTTP"
       path: /
     - host: calendar-grpc.local
+      protocol: "GRPC"
       path: /
 
 scheduler:
