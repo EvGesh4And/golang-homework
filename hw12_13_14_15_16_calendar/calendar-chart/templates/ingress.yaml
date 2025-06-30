@@ -16,5 +16,5 @@ spec:
               service:
                 name: {{ $.Values.calendar.name }}
                 port:
-                  name: {{ $host.protocol | lower }}
+                  name: {{ $host.portname | lower }}
 {{- end }}

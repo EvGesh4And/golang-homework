@@ -8,9 +8,11 @@ calendar:
       containerPort: 50051
   hosts:
     - host: calendar-http.local
+      portname: http
       protocol: "HTTP"
       path: /
     - host: calendar-grpc.local
+      portname: grpc
       protocol: "GRPC"
       path: /
 
