@@ -25,4 +25,4 @@ spec:
             - name: POSTGRES_DB
               value: {{ .Values.db.env.POSTGRES_DB }}
           ports:
-            - containerPort: {{ .Values.db.ports.containerPort }}
+            - containerPort: {{ .Values.db.port.containerPort }}
