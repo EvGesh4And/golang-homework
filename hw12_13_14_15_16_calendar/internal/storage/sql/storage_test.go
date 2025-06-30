@@ -26,7 +26,7 @@ func setupStorage(t *testing.T) *sqlstorage.Storage {
 
 	t.Helper()
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 
 	ctx := context.Background()
 	pg, err := testcontainers.GenericContainer(ctx,
@@ -60,7 +60,7 @@ func setupStorage(t *testing.T) *sqlstorage.Storage {
 		t.Fatalf("ошибка подключения: %v", err)
 	}
 
-	if err := st.Migrate("migrations"); err != nil {
+	if err := st.Migrate(ctx, "migrations"); err != nil {
 		t.Fatalf("ошибка миграции: %v", err)
 	}
 
