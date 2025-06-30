@@ -4,8 +4,6 @@ metadata:
   name: sender-deployment
   labels:
     app: sender
-    version: "1.0"
-    component: "backend"
 spec:
   replicas: 1
   selector:
@@ -18,5 +16,4 @@ spec:
     spec:
       containers:
         - name: sender
-          image: sender:develop
-          imagePullPolicy: Never
+          image: evgesh4/sender:develop

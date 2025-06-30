@@ -4,7 +4,6 @@ metadata:
   name: calendar-deployment
   labels:
     app: calendar
-    version: "1.0"
 spec:
   replicas: 1
   selector:
@@ -17,8 +16,7 @@ spec:
     spec:
       containers:
         - name: calendar
-          image: calendar:develop
-          imagePullPolicy: Never
+          image: evgesh4/calendar:develop
           ports:
             - containerPort: 8888
             - containerPort: 50051

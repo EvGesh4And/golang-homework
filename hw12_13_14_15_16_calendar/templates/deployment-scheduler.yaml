@@ -4,7 +4,6 @@ metadata:
   name: scheduler-deployment
   labels:
     app: scheduler
-    version: "1.0"
 spec:
   replicas: 1
   selector:
@@ -17,5 +16,4 @@ spec:
     spec:
       containers:
         - name: scheduler
-          image: scheduler:develop
-          imagePullPolicy: Never
+          image: evgesh4/scheduler:develop

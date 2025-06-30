@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.calendar.name }}
+  labels:
+    app: {{ .Values.calendar.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.calendar.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.calendar.name }}
+    spec:
+      containers:
+        - name: {{ .Values.calendar.name }}
+          image: {{ .Values.calendar.image }}
+          ports:
+            {{- range .Values.calendar.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+            {{- end }}

@@ -4,7 +4,6 @@ metadata:
   name: db-deployment
   labels:
     app: db
-    version: "1.0"
 spec:
   replicas: 1
   selector:

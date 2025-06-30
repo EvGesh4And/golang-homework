@@ -4,7 +4,6 @@ metadata:
   name: rb-deployment
   labels:
     app: rb
-    version: "1.0"
 spec:
   replicas: 1
   selector:
