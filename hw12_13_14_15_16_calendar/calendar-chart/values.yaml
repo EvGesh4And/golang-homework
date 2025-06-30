@@ -32,7 +32,7 @@ db:
     POSTGRES_DB: otus
 
 rb:
-  name: rabbitmq
+  name: rb
   image: rabbitmq:latest
   ports:
     - name: amqp
