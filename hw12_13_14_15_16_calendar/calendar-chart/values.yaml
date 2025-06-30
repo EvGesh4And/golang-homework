@@ -27,9 +27,9 @@ db:
   image: postgres:latest
   port: 5432
   env:
-    POSTGRES_USER: user
-    POSTGRES_PASSWORD: password
-    POSTGRES_DB: db
+    POSTGRES_USER: otus_user
+    POSTGRES_PASSWORD: otus_password
+    POSTGRES_DB: otus
 
 rb:
   name: rabbitmq
