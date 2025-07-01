@@ -26,7 +26,7 @@ func createTestEvent(id uuid.UUID, title string, start time.Time, duration time.
 func TestStorage_AddUpdateDelete(t *testing.T) {
 	ctx := context.Background()
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	store := New(logger)
 
 	start := time.Now().Add(time.Minute)
@@ -68,7 +68,7 @@ func TestStorage_AddUpdateDelete(t *testing.T) {
 func TestStorage_GetEvents(t *testing.T) {
 	ctx := context.Background()
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	store := New(logger)
 
 	now := time.Now().Add(time.Minute)
@@ -107,7 +107,7 @@ func TestStorage_GetEvents(t *testing.T) {
 func TestStorage_ConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 	store := New(logger)
 
 	start := time.Now().Add(time.Minute)

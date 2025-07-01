@@ -16,12 +16,14 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
+// Storage works with PostgreSQL to persist events.
 type Storage struct {
 	dsn    string
 	db     *sql.DB
 	logger *slog.Logger
 }
 
+// New creates a new SQL storage with the given DSN.
 func New(logger *slog.Logger, dsn string) *Storage {
 	return &Storage{
 		dsn:    dsn,
@@ -29,7 +31,14 @@ func New(logger *slog.Logger, dsn string) *Storage {
 	}
 }
 
+func (s *Storage) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "storage.sql")
+	return logger.WithLogMethod(ctx, method)
+}
+
+// Connect establishes database connection with retries.
 func (s *Storage) Connect(ctx context.Context) error {
+	ctx = s.setLogCompMeth(ctx, "Connect")
 	const maxAttempts = 5
 	const retryDelay = 2 * time.Second
 
@@ -38,27 +47,28 @@ func (s *Storage) Connect(ctx context.Context) error {
 	for i := 1; i <= maxAttempts; i++ {
 		s.db, err = sql.Open("pgx", s.dsn)
 		if err != nil {
-			err = fmt.Errorf("создание пула соединений: %w", err)
+			err = fmt.Errorf("creating connection pool: %w", err)
 		} else if pingErr := s.db.PingContext(ctx); pingErr != nil {
-			err = fmt.Errorf("установка соединения: %w", pingErr)
+			err = fmt.Errorf("establishing connection: %w", pingErr)
 		} else {
 			// Успешное подключение
 			return nil
 		}
 
-		log.Printf("Попытка %d: ошибка подключения к PostgreSQL: %v", i, err)
+		log.Printf("Attempt %d: failed to connect to PostgreSQL: %v", i, err)
 
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("подключение прервано по контексту: %w", ctx.Err())
+			return logger.AddPrefix(ctx, fmt.Errorf("connection aborted by context: %w", ctx.Err()))
 		case <-time.After(retryDelay):
 			// Пауза перед следующей попыткой
 		}
 	}
 
-	return fmt.Errorf("не удалось подключиться к PostgreSQL после %d попыток: %w", maxAttempts, err)
+	return logger.AddPrefix(ctx, fmt.Errorf("could not connect to PostgreSQL after %d attempts: %w", maxAttempts, err))
 }
 
+// Close closes database connection.
 func (s *Storage) Close() error {
 	return s.db.Close()
 }
@@ -66,23 +76,25 @@ func (s *Storage) Close() error {
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
-func (s *Storage) Migrate(migrate string) (err error) {
+// Migrate runs database migrations.
+func (s *Storage) Migrate(ctx context.Context, migrate string) (err error) {
 	goose.SetBaseFS(embedMigrations)
 
 	if err := goose.SetDialect("postgres"); err != nil {
-		return fmt.Errorf("установка диалекта: %w", err)
+		return logger.AddPrefix(ctx, fmt.Errorf("setting dialect: %w", err))
 	}
 
 	if err := goose.Up(s.db, migrate); err != nil {
-		return fmt.Errorf("ошибка миграции: %w", err)
+		return logger.AddPrefix(ctx, fmt.Errorf("migration error: %w", err))
 	}
 
 	return nil
 }
 
+// CreateEvent inserts a new event into database.
 func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	ctx = s.setLogCompMeth(ctx, "CreateEvent")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	query := `
         INSERT INTO events (id, title, description, user_id, start_time, end_time, time_before)
@@ -99,15 +111,16 @@ func (s *Storage) CreateEvent(ctx context.Context, event storage.Event) error {
 		int64(event.TimeBefore.Seconds()),
 	)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.CreateEvent: %w", err))
+		return logger.AddPrefix(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно создано событие")
+	s.logger.InfoContext(ctx, "event created successfully")
 	return nil
 }
 
+// UpdateEvent updates an existing event in database.
 func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storage.Event) error {
-	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	query := `
         UPDATE events
@@ -126,16 +139,17 @@ func (s *Storage) UpdateEvent(ctx context.Context, id uuid.UUID, newEvent storag
 		id,
 	)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.UpdateEvent: %w", err))
+		return logger.AddPrefix(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно обновлено событие")
+	s.logger.InfoContext(ctx, "event updated successfully")
 	return nil
 }
 
+// DeleteEvent removes an event from database.
 func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
-	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
+	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	query := `
         DELETE FROM events
@@ -144,20 +158,23 @@ func (s *Storage) DeleteEvent(ctx context.Context, id uuid.UUID) error {
 
 	_, err := s.db.ExecContext(ctx, query, id)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteEvent: %w", err))
+		return logger.AddPrefix(ctx, err)
 	}
-	s.logger.InfoContext(ctx, "успешно удалено событие")
+	s.logger.InfoContext(ctx, "event deleted successfully")
 	return nil
 }
 
+// GetEventsDay selects events for one day.
 func (s *Storage) GetEventsDay(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Day")
 }
 
+// GetEventsWeek selects events for one week.
 func (s *Storage) GetEventsWeek(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Week")
 }
 
+// GetEventsMonth selects events for one month.
 func (s *Storage) GetEventsMonth(ctx context.Context, start time.Time) ([]storage.Event, error) {
 	return s.getEvents(ctx, start, "Month")
 }
@@ -173,10 +190,10 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 		d = time.Hour * 24 * 30
 	}
 
-	ctx = logger.WithLogMethod(ctx, fmt.Sprintf("GetEvents%s", period))
+	ctx = s.setLogCompMeth(ctx, fmt.Sprintf("GetEvents%s", period))
 	ctx = logger.WithLogStart(ctx, start)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get events for interval")
 
 	query := `
         SELECT id, title, description, user_id, start_time, end_time, time_before
@@ -186,7 +203,7 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 
 	rows, err := s.db.QueryContext(ctx, query, start, start.Add(d))
 	if err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	defer rows.Close()
 
@@ -203,12 +220,12 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 			&event.End,
 			&intervalStr,
 		); err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+			return nil, logger.AddPrefix(ctx, err)
 		}
 
 		dur, err := parsePostgresInterval(intervalStr)
 		if err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+			return nil, logger.AddPrefix(ctx, err)
 		}
 		event.TimeBefore = dur
 
@@ -216,23 +233,24 @@ func (s *Storage) getEvents(ctx context.Context, start time.Time, period string)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetEvents%s: %w", period, err))
+		return nil, logger.AddPrefix(ctx, err)
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
+	s.logger.InfoContext(ctx, "events retrieved successfully", "count", len(events))
 
 	return events, nil
 }
 
+// GetNotifications returns upcoming event notifications.
 func (s *Storage) GetNotifications(
 	ctx context.Context,
 	currTime time.Time,
 	tick time.Duration,
 ) ([]storage.Notification, error) {
-	ctx = logger.WithLogMethod(ctx, "GetNotifications")
+	ctx = s.setLogCompMeth(ctx, "GetNotifications")
 	ctx = logger.WithLogStart(ctx, currTime)
 
-	s.logger.DebugContext(ctx, "попытка получить события за интервал")
+	s.logger.DebugContext(ctx, "attempting to get notifications for interval")
 
 	query := `
         SELECT id, title, start_time, user_id
@@ -242,7 +260,7 @@ func (s *Storage) GetNotifications(
 
 	rows, err := s.db.QueryContext(ctx, query, currTime, currTime.Add(tick))
 	if err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+		return nil, logger.AddPrefix(ctx, err)
 	}
 	defer rows.Close()
 
@@ -255,26 +273,27 @@ func (s *Storage) GetNotifications(
 			&notification.Start,
 			&notification.UserID,
 		); err != nil {
-			return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+			return nil, logger.AddPrefix(ctx, err)
 		}
 
 		notifications = append(notifications, notification)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, logger.WrapError(ctx, fmt.Errorf("storage:sql.GetNotifications: %w", err))
+		return nil, logger.AddPrefix(ctx, err)
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены уведомления", "count", len(notifications))
+	s.logger.InfoContext(ctx, "notifications retrieved successfully", "count", len(notifications))
 
 	return notifications, nil
 }
 
+// DeleteOldEvents removes events that ended before delTime.
 func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error {
-	ctx = logger.WithLogMethod(ctx, "DeleteOldEvents")
+	ctx = s.setLogCompMeth(ctx, "DeleteOldEvents")
 	ctx = logger.WithLogStart(ctx, delTime)
 
-	s.logger.DebugContext(ctx, "попытка удалить старые события")
+	s.logger.DebugContext(ctx, "attempting to delete old events")
 
 	query := `
         DELETE FROM events
@@ -283,16 +302,16 @@ func (s *Storage) DeleteOldEvents(ctx context.Context, delTime time.Time) error 
 
 	res, err := s.db.ExecContext(ctx, query, delTime)
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+		return logger.AddPrefix(ctx, err)
 	}
 	count, err := res.RowsAffected()
 	if err != nil {
-		return logger.WrapError(ctx, fmt.Errorf("storage:sql.DeleteOldEvents: %w", err))
+		return logger.AddPrefix(ctx, err)
 	}
 	if count > 0 {
-		s.logger.InfoContext(ctx, "успешно удалены старые события", "count", count)
+		s.logger.InfoContext(ctx, "old events deleted successfully", "count", count)
 	} else {
-		s.logger.InfoContext(ctx, "нет старых событий для удаления")
+		s.logger.InfoContext(ctx, "no old events to delete")
 	}
 	return nil
 }

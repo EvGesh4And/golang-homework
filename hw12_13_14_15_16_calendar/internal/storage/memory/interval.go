@@ -2,6 +2,7 @@ package memorystorage
 
 import "github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/storage"
 
+// IntervalSlice stores a slice of intervals without overlaps.
 type IntervalSlice struct {
 	Intervals []storage.Interval
 }

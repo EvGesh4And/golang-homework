@@ -20,14 +20,13 @@ import (
 )
 
 func setupStorage(t *testing.T) *sqlstorage.Storage {
-
 	if testing.Short() {
 		t.Skip("-short: пропускаем интеграцию")
 	}
 
 	t.Helper()
 
-	logger := logger.New("info", os.Stdout)
+	logger := logger.New("info", os.Stdout, false)
 
 	ctx := context.Background()
 	pg, err := testcontainers.GenericContainer(ctx,
@@ -61,7 +60,7 @@ func setupStorage(t *testing.T) *sqlstorage.Storage {
 		t.Fatalf("ошибка подключения: %v", err)
 	}
 
-	if err := st.Migrate("migrations"); err != nil {
+	if err := st.Migrate(ctx, "migrations"); err != nil {
 		t.Fatalf("ошибка миграции: %v", err)
 	}
 
@@ -152,5 +151,54 @@ func TestDeleteEvent(t *testing.T) {
 		if e.ID == event.ID {
 			t.Errorf("событие не удалено")
 		}
+	}
+}
+
+func TestDeleteOldEvents(t *testing.T) {
+	st := setupStorage(t)
+
+	ctx := context.Background()
+	now := time.Now()
+
+	oldEvent := storage.Event{
+		ID:          uuid.New(),
+		Title:       "Old Event",
+		Description: "old",
+		UserID:      uuid.New(),
+		Start:       now.Add(-2 * time.Hour),
+		End:         now.Add(-1 * time.Hour),
+		TimeBefore:  15 * time.Minute,
+	}
+	newEvent := storage.Event{
+		ID:          uuid.New(),
+		Title:       "New Event",
+		Description: "new",
+		UserID:      uuid.New(),
+		Start:       now.Add(time.Hour),
+		End:         now.Add(2 * time.Hour),
+		TimeBefore:  15 * time.Minute,
+	}
+
+	if err := st.CreateEvent(ctx, oldEvent); err != nil {
+		t.Fatalf("CreateEvent old: %v", err)
+	}
+	if err := st.CreateEvent(ctx, newEvent); err != nil {
+		t.Fatalf("CreateEvent new: %v", err)
+	}
+
+	if err := st.DeleteOldEvents(ctx, now); err != nil {
+		t.Fatalf("DeleteOldEvents: %v", err)
+	}
+
+	events, err := st.GetEventsMonth(ctx, now.Add(-3*time.Hour))
+	if err != nil {
+		t.Fatalf("GetEventsMonth: %v", err)
+	}
+
+	if len(events) != 1 {
+		t.Fatalf("expected 1 event after deletion, got %d", len(events))
+	}
+	if events[0].ID != newEvent.ID {
+		t.Errorf("unexpected event remaining: %v", events[0].ID)
 	}
 }

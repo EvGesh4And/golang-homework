@@ -27,37 +27,37 @@ func captureOutput(f func(w io.Writer)) string {
 
 func TestLogger_Info(t *testing.T) {
 	output := captureOutput(func(w io.Writer) {
-		log := New("debug", w)
-		log.Debug("проверка валидности события", "event_id", 10)
+		log := New("debug", w, false)
+		log.Debug("event validation check", "event_id", 10)
 	})
 
-	require.Contains(t, output, "проверка валидности события", "должен содержать сообщение")
+	require.Contains(t, output, "event validation check", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("info", w)
-		log.Info("добавлено событие", "event_id", 10)
-		log.Warn("потеряно соединение, попытка его восстановить")
+		log := New("info", w, false)
+		log.Info("event added", "event_id", 10)
+		log.Warn("connection lost, trying to restore it")
 	})
 
-	require.Contains(t, output, "добавлено событие", "должен содержать сообщение")
+	require.Contains(t, output, "event added", "should contain the message")
 
-	require.Contains(t, output, "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
+	require.Contains(t, output, "connection lost, trying to restore it", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("warn", w)
-		log.Info("добавлено событие", "event_id", 10)
-		log.Warn("потеряно соединение, попытка его восстановить")
+		log := New("warn", w, false)
+		log.Info("event added", "event_id", 10)
+		log.Warn("connection lost, trying to restore it")
 	})
 
-	require.Contains(t, output, "потеряно соединение, попытка его восстановить", "должен содержать сообщение")
+	require.Contains(t, output, "connection lost, trying to restore it", "should contain the message")
 
 	output = captureOutput(func(w io.Writer) {
-		log := New("error", w)
-		log.Info("добавлено событие", "event_id", 10)
-		log.Error("связь с БД полностью потеряно")
-		log.Warn("потеряно соединение, попытка его восстановить")
-		log.Debug("проверка валидности события", "event_id", 10)
+		log := New("error", w, false)
+		log.Info("event added", "event_id", 10)
+		log.Error("database connection completely lost")
+		log.Warn("connection lost, trying to restore it")
+		log.Debug("event validation check", "event_id", 10)
 	})
 	fmt.Println(output)
-	require.Contains(t, output, "связь с БД полностью потеряно", "должен содержать сообщение")
+	require.Contains(t, output, "database connection completely lost", "should contain the message")
 }

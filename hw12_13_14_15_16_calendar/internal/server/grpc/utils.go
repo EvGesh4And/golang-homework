@@ -30,20 +30,21 @@ func getEventFromBody[T interface{ GetEvent() *pb.Event }](
 	log *slog.Logger,
 	req T,
 ) (storage.Event, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getEventFromBody")
-	log.DebugContext(ctx, "попытка извлечь событие из тела запроса")
+	log.DebugContext(ctx, "attempting to extract event from request body")
 	eventPB := req.GetEvent()
 	if eventPB == nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrMissingEvent)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrMissingEvent)
 	}
 	id, err := uuid.Parse(eventPB.Id)
 	if err != nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrInvalidEventID)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrInvalidEventID)
 	}
 
 	userID, err := uuid.Parse(eventPB.UserId)
 	if err != nil {
-		return storage.Event{}, logger.WrapError(ctx, server.ErrInvalidUserID)
+		return storage.Event{}, logger.AddPrefix(ctx, server.ErrInvalidUserID)
 	}
 
 	return storage.Event{
@@ -62,18 +63,19 @@ func getEventIDFromBody[T interface{ GetId() string }](
 	log *slog.Logger,
 	req T,
 ) (uuid.UUID, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getEventIDFromBody")
-	log.DebugContext(ctx, "попытка извлечь ID события из параметров запроса")
+	log.DebugContext(ctx, "attempting to extract event ID from request parameters")
 	id := req.GetId()
 	if id == "" {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrMissingEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrMissingEventID)
 	}
 	uuID, err := uuid.Parse(id)
 	if err != nil {
-		return uuid.Nil, logger.WrapError(ctx, server.ErrInvalidEventID)
+		return uuid.Nil, logger.AddPrefix(ctx, server.ErrInvalidEventID)
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
-	log.DebugContext(ctx, "успешно извлечён ID из параметров запроса")
+	log.DebugContext(ctx, "event ID successfully extracted from request parameters")
 	return uuID, nil
 }
 
@@ -82,14 +84,15 @@ func getStartTime[T interface{ GetStart() *timestamppb.Timestamp }](
 	log *slog.Logger,
 	req T,
 ) (time.Time, error) {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
 	ctx = logger.WithLogMethod(ctx, "getStartTime")
-	log.DebugContext(ctx, "попытка извлечь время начала из параметров запроса")
+	log.DebugContext(ctx, "attempting to extract start time from request parameters")
 	startTimestamp := req.GetStart()
 	if startTimestamp == nil {
-		return time.Time{}, logger.WrapError(ctx, server.ErrInvalidStartPeriod)
+		return time.Time{}, logger.AddPrefix(ctx, server.ErrInvalidStartPeriod)
 	}
 	start := startTimestamp.AsTime()
 	ctx = logger.WithLogStart(ctx, start)
-	log.InfoContext(ctx, "успешно извлечено время начала из параметров запроса")
+	log.InfoContext(ctx, "start time successfully extracted from request parameters")
 	return start, nil
 }

@@ -35,6 +35,7 @@ build-img:         ## собрать образы сервисов + БД + Rabb
 	      --build-arg SERVICE_NAME=$$s \
 	      -f build/Dockerfile . ; \
 	done
+	@docker build -t custom-filebeat -f deployments/filebeat/Dockerfile .
 
 up: build-img     ## поднять docker-compose стек
 	docker compose -f deployments/docker-compose.yaml up -d
@@ -61,7 +62,7 @@ test-dc-run:
 test-dc-stop:
 	docker compose -f ./deployments/docker-compose.yaml down -v || true
 
-integration-tests: test-dc-run
+integration-tests: build-img test-dc-run
 	@set -e; \
 	trap '$(MAKE) test-dc-stop' EXIT; \
 	go test -v -tags=integration ./tests/... -ginkgo.v -ginkgo.fail-fast

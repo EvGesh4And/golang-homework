@@ -29,6 +29,8 @@ linters-settings:
           - google.golang.org/grpc
           - github.com/lmittmann/tint
           - github.com/streadway/amqp
+          - golang.org/x/sync/errgroup
+          - github.com/caarlos0/env/v10
       Test:
         files:
           - $test
@@ -42,6 +44,7 @@ linters-settings:
           - github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar
           - github.com/onsi/ginkgo/v2
           - github.com/onsi/gomega
+          - github.com/streadway/amqp
 issues:
   exclude-rules:
     - path: _test\.go

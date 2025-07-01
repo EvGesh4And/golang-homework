@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/rabbitmq/producer"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/scheduler"
 )
@@ -26,10 +27,14 @@ func main() {
 	}
 
 	log.SetOutput(os.Stdout)
-	cfg := NewConfig()
-	childLoggers, closer, err := setupLogger(cfg)
+	cfg, err := NewConfig()
 	if err != nil {
+		log.Printf("error initializing config: %v", err)
 		return
+	}
+	lg, closer, err := logger.NewLogger(cfg.Logger)
+	if err != nil {
+		log.Fatalf("logger setup error: %v", err)
 	}
 	if closer != nil {
 		defer closer.Close()
@@ -37,34 +42,27 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	storage, closer, err := setupStorage(ctx, cfg, childLoggers)
+	storage, closer, err := setupStorage(ctx, cfg, lg)
 	if err != nil {
+		log.Printf("error initializing storage: %v", err)
 		return
 	}
 
 	defer func() {
 		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия хранилища sql: %s", err)
+			log.Printf("error closing storage: %s", err)
 		} else {
-			log.Print("хранилище sql успешно закрыто")
+			log.Print("storage sql closed successfully")
 		}
 	}()
 
-	producer, err := producer.NewRabbitProducer(ctx, cfg.RabbitMQ, childLoggers.scheduler)
+	producer, err := producer.NewRabbitProducer(ctx, cfg.RabbitMQ, lg)
 	if err != nil {
 		return
 	}
 
-	defer func() {
-		if err := closer.Close(); err != nil {
-			log.Printf("ошибка закрытия pubsub: %s", err)
-		} else {
-			log.Print("pubsub успешно закрыт")
-		}
-	}()
-
-	scheduler := scheduler.NewScheduler(childLoggers.scheduler, storage, producer, cfg.Notifications)
+	scheduler := scheduler.NewScheduler(lg, storage, producer, cfg.Notifications)
 
 	scheduler.Start(ctx)
-	log.Print("scheduler завершился корректно...")
+	log.Print("scheduler shutdown complete...")
 }

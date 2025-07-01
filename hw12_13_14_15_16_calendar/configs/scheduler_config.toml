@@ -1,6 +1,7 @@
 [logger]
 mod = "console"
 path = "/var/log/scheduler.log"
+json = true
 level = "debug"
 
 [storage]

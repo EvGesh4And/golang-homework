@@ -1,0 +1,43 @@
+calendar:
+  name: calendar
+  image: evgesh4/calendar:develop
+  ports:
+    - name: http
+      containerPort: 8888
+    - name: grpc
+      containerPort: 50051
+  hosts:
+    - host: calendar-http.local
+      portname: http
+      protocol: "HTTP"
+      path: /
+    - host: calendar-grpc.local
+      portname: grpc
+      protocol: "GRPC"
+      path: /
+
+scheduler:
+  name: scheduler
+  image: evgesh4/scheduler:develop
+
+sender:
+  name: sender
+  image: evgesh4/sender:develop
+
+db:
+  name: db
+  image: postgres:latest
+  port: 5432
+  env:
+    POSTGRES_USER: otus_user
+    POSTGRES_PASSWORD: otus_password
+    POSTGRES_DB: otus
+
+rb:
+  name: rb
+  image: rabbitmq:latest
+  ports:
+    - name: amqp
+      containerPort: 5672
+    - name: web
+      containerPort: 15672

@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rb-deployment
+  labels:
+    app: rb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rb
+  template:
+    metadata:
+      labels:
+        app: rb
+    spec:
+      containers:
+        - name: rb
+          image: rabbitmq:latest
+          ports:
+            - containerPort: 5672     # AMQP
+            - containerPort: 15672    # Web UI

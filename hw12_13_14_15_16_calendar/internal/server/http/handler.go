@@ -24,36 +24,38 @@ func (s *Server) routes() http.Handler {
 	return mux
 }
 
+// CreateEvent handles event creation request.
 func (s *Server) CreateEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "CreateEvent")
+	ctx := s.setLogCompMeth(r.Context(), "CreateEvent")
 
 	event, err := s.getEventFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx = logger.WithLogEventID(ctx, event.ID)
 
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 
 	if err := s.app.CreateEvent(ctx, event); err != nil {
 		s.checkError(w, err, server.ErrCreateEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно создано")
+	s.logger.InfoContext(ctx, "event successfully created")
 	w.WriteHeader(http.StatusCreated)
 }
 
+// UpdateEvent handles event update request.
 func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "UpdateEvent")
+	ctx := s.setLogCompMeth(r.Context(), "UpdateEvent")
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -62,57 +64,61 @@ func (s *Server) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err := s.getEventFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
 	// Поля ID у события может быть пустым
 	event.ID = uuID
 
-	s.logger.DebugContext(ctx, "попытка обновления события")
+	s.logger.DebugContext(ctx, "attempting to update event")
 
 	if err := s.app.UpdateEvent(ctx, uuID, event); err != nil {
 		s.checkError(w, err, server.ErrUpdateEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно обновлено")
+	s.logger.InfoContext(ctx, "event successfully updated")
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// DeleteEvent handles event deletion request.
 func (s *Server) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	ctx := logger.WithLogMethod(r.Context(), "DeleteEvent")
+	ctx := s.setLogCompMeth(r.Context(), "DeleteEvent")
 
 	uuID, err := s.getEventIDFromBody(ctx, r)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidEventData.Error(), http.StatusBadRequest)
 		return
 	}
 
 	ctx = logger.WithLogEventID(ctx, uuID)
 
-	s.logger.DebugContext(ctx, "попытка удалить событие")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	if err := s.app.DeleteEvent(ctx, uuID); err != nil {
 		s.checkError(w, err, server.ErrDeleteEvent)
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно удалено")
+	s.logger.InfoContext(ctx, "event successfully deleted")
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetEventsDay returns events for a single day.
 func (s *Server) GetEventsDay(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Day", s.app.GetEventsDay)
 }
 
+// GetEventsWeek returns events for a week.
 func (s *Server) GetEventsWeek(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Week", s.app.GetEventsWeek)
 }
 
+// GetEventsMonth returns events for a month.
 func (s *Server) GetEventsMonth(w http.ResponseWriter, r *http.Request) {
 	s.handleGetEvents(w, r, "Month", s.app.GetEventsMonth)
 }
@@ -123,21 +129,21 @@ func (s *Server) handleGetEvents(
 	period string,
 	getEventsFunc func(ctx context.Context, start time.Time) ([]storage.Event, error),
 ) {
-	ctx := logger.WithLogMethod(r.Context(), "GetEvents"+period)
+	ctx := s.setLogCompMeth(r.Context(), "GetEvents"+period)
 
 	startStr := r.URL.Query().Get("start")
 	start, err := time.Parse(time.RFC3339, startStr)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrInvalidStartPeriod.Error(), http.StatusBadRequest)
 		return
 	}
 
-	s.logger.DebugContext(ctx, "попытка получить события")
+	s.logger.DebugContext(ctx, "attempting to get events")
 
 	events, err := getEventsFunc(r.Context(), start)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		http.Error(w, server.ErrEventRetrieval.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -147,7 +153,7 @@ func (s *Server) handleGetEvents(
 		eventsDTO[i] = storage.ToDTO(events[i])
 	}
 
-	s.logger.InfoContext(ctx, "успешно получены события", "count", len(events))
+	s.logger.InfoContext(ctx, "events successfully retrieved", "count", len(events))
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(eventsDTO)
 }

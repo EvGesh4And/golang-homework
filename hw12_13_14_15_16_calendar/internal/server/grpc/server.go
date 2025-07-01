@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+// CalendarServer implements the gRPC calendar API.
 type CalendarServer struct {
 	logger *slog.Logger
 	pb.UnimplementedCalendarServer
@@ -20,6 +21,12 @@ type CalendarServer struct {
 	lis net.Listener
 }
 
+func (s *CalendarServer) setLogCompMeth(ctx context.Context, method string) context.Context {
+	ctx = logger.WithLogComponent(ctx, "server.grpc")
+	return logger.WithLogMethod(ctx, method)
+}
+
+// NewServerGRPC creates a new gRPC calendar server.
 func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application) *CalendarServer {
 	return &CalendarServer{
 		logger: logger,
@@ -28,77 +35,83 @@ func NewServerGRPC(logger *slog.Logger, lis net.Listener, app server.Application
 	}
 }
 
+// CreateEvent handles creation of a new event via gRPC.
 func (s *CalendarServer) CreateEvent(ctx context.Context, req *pb.CreateEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "CreateEvent")
+	ctx = s.setLogCompMeth(ctx, "CreateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, server.ErrInvalidEventData
 	}
 	ctx = logger.WithLogEventID(ctx, event.ID)
 
-	s.logger.DebugContext(ctx, "попытка создать событие")
+	s.logger.DebugContext(ctx, "attempting to create event")
 	err = s.app.CreateEvent(ctx, event)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 
-	s.logger.InfoContext(ctx, "событие успешно создано")
+	s.logger.InfoContext(ctx, "event successfully created")
 	return &emptypb.Empty{}, nil
 }
 
+// UpdateEvent handles event updates via gRPC.
 func (s *CalendarServer) UpdateEvent(ctx context.Context, req *pb.UpdateEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "UpdateEvent")
+	ctx = s.setLogCompMeth(ctx, "UpdateEvent")
 	event, err := getEventFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, server.ErrInvalidEventData
 	}
 	uuID, err := getEventIDFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	ctx = logger.WithLogEventID(ctx, uuID)
 	event.ID = uuID
-	s.logger.DebugContext(ctx, "попытка обновить событие")
+	s.logger.DebugContext(ctx, "attempting to update event")
 	err = s.app.UpdateEvent(ctx, event.ID, event)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
-	s.logger.InfoContext(ctx, "событие успешно обновлено")
+	s.logger.InfoContext(ctx, "event successfully updated")
 	return &emptypb.Empty{}, nil
 }
 
+// DeleteEvent handles deletion of an event via gRPC.
 func (s *CalendarServer) DeleteEvent(ctx context.Context, req *pb.DeleteEventReq) (*emptypb.Empty, error) {
-	ctx = logger.WithLogMethod(ctx, "DeleteEvent")
+	ctx = s.setLogCompMeth(ctx, "DeleteEvent")
 	id, err := getEventIDFromBody(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
 	ctx = logger.WithLogEventID(ctx, id)
-	s.logger.DebugContext(ctx, "попытка удаления события")
+	s.logger.DebugContext(ctx, "attempting to delete event")
 
 	err = s.app.DeleteEvent(ctx, id)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return &emptypb.Empty{}, err
 	}
-	s.logger.InfoContext(ctx, "событие успешно удалено")
+	s.logger.InfoContext(ctx, "event successfully deleted")
 	return &emptypb.Empty{}, nil
 }
 
+// GetEventsDay returns events for a day via gRPC.
 func (s *CalendarServer) GetEventsDay(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsDay", req, s.app.GetEventsDay)
 }
 
+// GetEventsWeek returns events for a week via gRPC.
 func (s *CalendarServer) GetEventsWeek(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsWeek", req, s.app.GetEventsWeek)
 }
 
+// GetEventsMonth returns events for a month via gRPC.
 func (s *CalendarServer) GetEventsMonth(ctx context.Context, req *pb.GetEventsReq) (*pb.GetEventsResp, error) {
 	return s.getEvents(ctx, "GetEventsMonth", req, s.app.GetEventsMonth)
 }
@@ -109,18 +122,18 @@ func (s *CalendarServer) getEvents(
 	req *pb.GetEventsReq,
 	getFunc func(context.Context, time.Time) ([]storage.Event, error),
 ) (*pb.GetEventsResp, error) {
-	ctx = logger.WithLogMethod(ctx, methodName)
+	ctx = s.setLogCompMeth(ctx, methodName)
 
 	start, err := getStartTime(ctx, s.logger, req)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return nil, err
 	}
 	ctx = logger.WithLogStart(ctx, start)
 
 	events, err := getFunc(ctx, start)
 	if err != nil {
-		s.logger.ErrorContext(logger.ErrorCtx(ctx, err), err.Error())
+		s.logger.ErrorContext(ctx, err.Error())
 		return nil, server.ErrEventRetrieval
 	}
 
@@ -128,6 +141,6 @@ func (s *CalendarServer) getEvents(
 	for _, e := range events {
 		resp.Events = append(resp.Events, convertToEventProto(e))
 	}
-	s.logger.InfoContext(ctx, "события успешно получены")
+	s.logger.InfoContext(ctx, "events successfully retrieved")
 	return resp, nil
 }

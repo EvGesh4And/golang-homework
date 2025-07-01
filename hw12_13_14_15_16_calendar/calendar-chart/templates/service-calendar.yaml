@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.calendar.name }}
+spec:
+  selector:
+    app: {{ .Values.calendar.name }}
+  ports:
+    {{- range .Values.calendar.ports }}
+    - name: {{ .name }}
+      port: {{ .containerPort }}
+      targetPort: {{ .containerPort }}
+    {{- end }}

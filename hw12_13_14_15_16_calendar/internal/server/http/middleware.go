@@ -1,7 +1,7 @@
 package internalhttp
 
 import (
-	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -25,39 +25,23 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
-		// Захватываем IP клиента.
 		ip, _, err := net.SplitHostPort(r.RemoteAddr)
 		if err != nil {
 			ip = r.RemoteAddr
 		}
 
-		// Оборачиваем writer, чтобы перехватить статус.
 		recorder := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
-
-		// Обработка запроса.
 		next.ServeHTTP(recorder, r)
 
-		// Метод, путь и версия.
-		method := r.Method
-		path := r.URL.RequestURI()
-		proto := r.Proto
-
-		// Статус.
-		status := recorder.statusCode
-
-		// Латентность.
-		latency := time.Since(start).Milliseconds()
-
-		// User-Agent.
-		userAgent := r.Header.Get("User-Agent")
-		if userAgent == "" {
-			userAgent = "-"
-		} else {
-			userAgent = `"` + userAgent + `"`
-		}
-
-		s.logger.Info(fmt.Sprintf("%s %s %s %s %d %d %s",
-			ip, method, path, proto, status, latency, userAgent))
+		s.logger.Info("http request finished",
+			slog.String("ip", ip),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.RequestURI()),
+			slog.String("proto", r.Proto),
+			slog.Int("status", recorder.statusCode),
+			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
+			slog.String("user_agent", r.UserAgent()),
+		)
 	})
 }
 
@@ -70,7 +54,7 @@ func (s *Server) checkContentTypeMiddleware(next http.Handler) http.Handler {
 			http.Error(w, server.ErrInvalidContentType.Error(), http.StatusBadRequest)
 			return
 		}
-		s.logger.Debug("валидный Content-Type", "Content-Type", contentType)
+		s.logger.Debug("valid Content-Type", "Content-Type", contentType)
 
 		next.ServeHTTP(w, r)
 	})

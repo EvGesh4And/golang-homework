@@ -59,7 +59,7 @@ func newTestServer(t *testing.T, app server.Application) (pb.CalendarClient, fun
 	assert.NoError(t, err)
 
 	s := grpc.NewServer()
-	log := logger.New("info", os.Stdout)
+	log := logger.New("info", os.Stdout, false)
 	pb.RegisterCalendarServer(s, NewServerGRPC(log, lis, app))
 
 	// Канал для отслеживания ошибок сервера

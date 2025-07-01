@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/logger"
 	"github.com/EvGesh4And/golang-homework/hw12_13_14_15_16_calendar/internal/rabbitmq/consumer"
 )
 
@@ -27,8 +28,12 @@ func main() {
 	}
 
 	// ---------- настройка логирования ----------
-	cfg := NewConfig()
-	child, closer, err := setupLogger(cfg)
+	cfg, err := NewConfig()
+	if err != nil {
+		log.Printf("error initializing config: %v", err)
+		return
+	}
+	lg, closer, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
 		log.Fatalf("logger setup error: %v", err)
 	}
@@ -40,7 +45,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	cons, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, child.sender)
+	cons, err := consumer.NewRabbitConsumer(ctx, cfg.RabbitMQ, lg)
 	if err != nil {
 		log.Printf("cannot create consumer: %v", err)
 		return
@@ -53,16 +58,16 @@ func main() {
 		}
 	}()
 
-	<-ctx.Done() // ждём SIGINT/SIGTERM
+	// ждём SIGINT/SIGTERM
+	<-ctx.Done()
 
-	// ---------- даём немного времени на корректное закрытие ----------
-	shCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// ---------- даём времени на корректное закрытие ----------
+	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := cons.Shutdown(); err != nil {
 		log.Printf("error during shutdown: %v", err)
 	}
 
-	log.Print("sender завершился корректно")
-	_ = shCtx // т.к. Shutdown блокируется лишь до выполнения <-c.done, тайм-аут здесь символический
+	log.Print("sender shutdown complete")
 }

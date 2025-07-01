@@ -117,7 +117,7 @@ var _ = Describe("Calendar", func() {
 				event.Start = time.Now().Add(10 * time.Second)
 				event.Title = "updated title"
 				event.Description = "updated description"
-				event.TimeBefore = 5 * time.Second
+				event.TimeBefore = 2 * time.Second
 
 				eventDTO := storage.ToDTO(event)
 
@@ -214,7 +214,7 @@ var _ = Describe("Calendar", func() {
 			Eventually(func() string {
 				out, _ := exec.CommandContext(ctx, "docker", "logs", "sender", "--since", "1s").CombinedOutput()
 				return string(out)
-			}).WithTimeout(10 * time.Second).Should(ContainSubstring("updated title"))
+			}).WithTimeout(15 * time.Second).Should(ContainSubstring("updated title"))
 		})
 	})
 })

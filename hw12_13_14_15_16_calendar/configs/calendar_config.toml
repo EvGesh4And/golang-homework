@@ -1,6 +1,7 @@
 [logger]
 mod = "console"
 path = "/var/log/calendar.log"
+json = true
 level = "debug"
 
 [storage]
@@ -14,4 +15,4 @@ port = 8888
 
 [grpc]
 host = "0.0.0.0"
-port = 50051 
+port = 50051
