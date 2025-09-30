@@ -68,7 +68,7 @@ func startHTTPServer(
 
 	g.Go(func() error {
 		log.Printf("HTTP server starting %s...", addr)
-		if err := serverHTTP.Start(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := serverHTTP.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("HTTP start: %w", err)
 		}
 		return nil
